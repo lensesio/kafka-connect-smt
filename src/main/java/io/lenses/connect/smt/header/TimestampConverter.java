@@ -1,3 +1,571 @@
 package io.lenses.connect.smt.header;
 
-public class TimestampConverter {}
+import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
+import static org.apache.kafka.connect.transforms.util.Requirements.requireStructOrNull;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.common.utils.Utils;
+import org.apache.kafka.connect.connector.ConnectRecord;
+import org.apache.kafka.connect.data.Field;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.SchemaAndValue;
+import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.data.Time;
+import org.apache.kafka.connect.data.Timestamp;
+import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.DataException;
+import org.apache.kafka.connect.transforms.Transformation;
+import org.apache.kafka.connect.transforms.util.SimpleConfig;
+
+/**
+ * A transformer which converts a timestamp value field and inserts it as a header. It supports
+ * scenarios like time based rolling windows for partitioning when sinking to a storage like S3,
+ * while avoiding the memory and CPU overhead of the InsertField SMT.
+ *
+ * @param <R> - the record type
+ */
+public final class TimestampConverter<R extends ConnectRecord<R>> implements Transformation<R> {
+  public static final String FIELD_CONFIG = "field";
+  public static final String HEADER_KEY_CONFIG = "header.key";
+
+  public static final String TARGET_TYPE_CONFIG = "target.type";
+
+  public static final String FORMAT_CONFIG = "format";
+  private static final String FORMAT_DEFAULT = "";
+
+  private static final String KEY_FIELD = "_key";
+  private static final String VALUE_FIELD = "_value";
+
+  public static final String UNIX_PRECISION_CONFIG = "unix.precision";
+  private static final String UNIX_PRECISION_DEFAULT = "milliseconds";
+
+  private static final String PURPOSE = "converting timestamp formats";
+
+  private static final String TYPE_STRING = "string";
+  private static final String TYPE_UNIX = "unix";
+  private static final String TYPE_DATE = "Date";
+  private static final String TYPE_TIME = "Time";
+  private static final String TYPE_TIMESTAMP = "Timestamp";
+
+  private static final String UNIX_PRECISION_MILLIS = "milliseconds";
+  private static final String UNIX_PRECISION_MICROS = "microseconds";
+  private static final String UNIX_PRECISION_NANOS = "nanoseconds";
+  private static final String UNIX_PRECISION_SECONDS = "seconds";
+
+  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+  public static final Schema OPTIONAL_DATE_SCHEMA =
+      org.apache.kafka.connect.data.Date.builder().optional().schema();
+  public static final Schema OPTIONAL_TIMESTAMP_SCHEMA = Timestamp.builder().optional().schema();
+  public static final Schema OPTIONAL_TIME_SCHEMA = Time.builder().optional().schema();
+
+  public static final ConfigDef CONFIG_DEF =
+      new ConfigDef()
+          .define(
+              FIELD_CONFIG,
+              ConfigDef.Type.STRING,
+              "",
+              ConfigDef.Importance.HIGH,
+              "The field path containing the timestamp, or empty if the entire value"
+                  + " is a timestamp. Prefix the path with the literal string '"
+                  + KEY_FIELD
+                  + "' or '"
+                  + VALUE_FIELD
+                  + "' to specify the record key or value."
+                  + "If no prefix is specified, the default is '"
+                  + VALUE_FIELD
+                  + "'.")
+          .define(
+              HEADER_KEY_CONFIG,
+              ConfigDef.Type.STRING,
+              null,
+              ConfigDef.Importance.HIGH,
+              "The name of the header to insert the timestamp into." + " It cannot be null.")
+          .define(
+              TARGET_TYPE_CONFIG,
+              ConfigDef.Type.STRING,
+              ConfigDef.NO_DEFAULT_VALUE,
+              ConfigDef.ValidString.in(
+                  TYPE_STRING, TYPE_UNIX, TYPE_DATE, TYPE_TIME, TYPE_TIMESTAMP),
+              ConfigDef.Importance.HIGH,
+              "The desired timestamp representation: string, unix, Date, Time, or Timestamp")
+          .define(
+              FORMAT_CONFIG,
+              ConfigDef.Type.STRING,
+              FORMAT_DEFAULT,
+              ConfigDef.Importance.MEDIUM,
+              "A SimpleDateFormat-compatible format for the timestamp. Used to generate the output "
+                  + " when type=string or used to parse the input if the input is a string.")
+          .define(
+              UNIX_PRECISION_CONFIG,
+              ConfigDef.Type.STRING,
+              UNIX_PRECISION_DEFAULT,
+              ConfigDef.ValidString.in(
+                  UNIX_PRECISION_NANOS, UNIX_PRECISION_MICROS,
+                  UNIX_PRECISION_MILLIS, UNIX_PRECISION_SECONDS),
+              ConfigDef.Importance.LOW,
+              "The desired Unix precision for the timestamp: seconds, milliseconds, microseconds, "
+                  + "or nanoseconds. Used to generate the output when type=unix or used to parse "
+                  + "the input if the input is a Long. This SMT will cause precision loss during "
+                  + "conversions from, and to, values with sub-millisecond components.");
+
+  private interface TimestampTranslator {
+    /** Convert from the type-specific format to the universal java.util.Date format */
+    Date toRaw(Config config, Object orig);
+
+    /** Get the schema for this format. */
+    Schema typeSchema(boolean isOptional);
+
+    /** Convert from the universal java.util.Date format to the type-specific format */
+    Object toType(Config config, Date orig);
+  }
+
+  private static final Map<String, TimestampTranslator> TRANSLATORS = new HashMap<>();
+
+  static {
+    TRANSLATORS.put(
+        TYPE_STRING,
+        new TimestampTranslator() {
+          @Override
+          public Date toRaw(Config config, Object orig) {
+            if (!(orig instanceof String)) {
+              throw new DataException(
+                  "Expected string timestamp to be a String, but found " + orig.getClass());
+            }
+            try {
+              return config.format.parse((String) orig);
+            } catch (ParseException e) {
+              throw new DataException(
+                  "Could not parse timestamp: value ("
+                      + orig
+                      + ") does not match pattern ("
+                      + config.format.toPattern()
+                      + ")",
+                  e);
+            }
+          }
+
+          @Override
+          public Schema typeSchema(boolean isOptional) {
+            return isOptional ? Schema.OPTIONAL_STRING_SCHEMA : Schema.STRING_SCHEMA;
+          }
+
+          @Override
+          public String toType(Config config, Date orig) {
+            synchronized (config.format) {
+              return config.format.format(orig);
+            }
+          }
+        });
+
+    TRANSLATORS.put(
+        TYPE_UNIX,
+        new TimestampTranslator() {
+          @Override
+          public Date toRaw(Config config, Object orig) {
+            if (!(orig instanceof Long)) {
+              throw new DataException(
+                  "Expected Unix timestamp to be a Long, but found " + orig.getClass());
+            }
+            long unixTime = (Long) orig;
+            switch (config.unixPrecision) {
+              case UNIX_PRECISION_SECONDS:
+                return Timestamp.toLogical(Timestamp.SCHEMA, TimeUnit.SECONDS.toMillis(unixTime));
+              case UNIX_PRECISION_MICROS:
+                return Timestamp.toLogical(
+                    Timestamp.SCHEMA, TimeUnit.MICROSECONDS.toMillis(unixTime));
+              case UNIX_PRECISION_NANOS:
+                return Timestamp.toLogical(
+                    Timestamp.SCHEMA, TimeUnit.NANOSECONDS.toMillis(unixTime));
+              case UNIX_PRECISION_MILLIS:
+              default:
+                return Timestamp.toLogical(Timestamp.SCHEMA, unixTime);
+            }
+          }
+
+          @Override
+          public Schema typeSchema(boolean isOptional) {
+            return isOptional ? Schema.OPTIONAL_INT64_SCHEMA : Schema.INT64_SCHEMA;
+          }
+
+          @Override
+          public Long toType(Config config, Date orig) {
+            long unixTimeMillis = Timestamp.fromLogical(Timestamp.SCHEMA, orig);
+            switch (config.unixPrecision) {
+              case UNIX_PRECISION_SECONDS:
+                return TimeUnit.MILLISECONDS.toSeconds(unixTimeMillis);
+              case UNIX_PRECISION_MICROS:
+                return TimeUnit.MILLISECONDS.toMicros(unixTimeMillis);
+              case UNIX_PRECISION_NANOS:
+                return TimeUnit.MILLISECONDS.toNanos(unixTimeMillis);
+              case UNIX_PRECISION_MILLIS:
+              default:
+                return unixTimeMillis;
+            }
+          }
+        });
+
+    TRANSLATORS.put(
+        TYPE_DATE,
+        new TimestampTranslator() {
+          @Override
+          public Date toRaw(Config config, Object orig) {
+            if (!(orig instanceof Date)) {
+              throw new DataException(
+                  "Expected Date to be a java.util.Date, but found " + orig.getClass());
+            }
+            // Already represented as a java.util.Date and Connect Dates are a subset of valid
+            // java.util.Date values
+            return (Date) orig;
+          }
+
+          @Override
+          public Schema typeSchema(boolean isOptional) {
+            return isOptional ? OPTIONAL_DATE_SCHEMA : org.apache.kafka.connect.data.Date.SCHEMA;
+          }
+
+          @Override
+          public Date toType(Config config, Date orig) {
+            Calendar result = Calendar.getInstance(UTC);
+            result.setTime(orig);
+            result.set(Calendar.HOUR_OF_DAY, 0);
+            result.set(Calendar.MINUTE, 0);
+            result.set(Calendar.SECOND, 0);
+            result.set(Calendar.MILLISECOND, 0);
+            return result.getTime();
+          }
+        });
+
+    TRANSLATORS.put(
+        TYPE_TIME,
+        new TimestampTranslator() {
+          @Override
+          public Date toRaw(Config config, Object orig) {
+            if (!(orig instanceof Date)) {
+              throw new DataException(
+                  "Expected Time to be a java.util.Date, but found " + orig.getClass());
+            }
+            // Already represented as a java.util.Date and Connect Times are a subset of valid
+            // java.util.Date values
+            return (Date) orig;
+          }
+
+          @Override
+          public Schema typeSchema(boolean isOptional) {
+            return isOptional ? OPTIONAL_TIME_SCHEMA : Time.SCHEMA;
+          }
+
+          @Override
+          public Date toType(Config config, Date orig) {
+            Calendar origCalendar = Calendar.getInstance(UTC);
+            origCalendar.setTime(orig);
+            Calendar result = Calendar.getInstance(UTC);
+            result.setTimeInMillis(0L);
+            result.set(Calendar.HOUR_OF_DAY, origCalendar.get(Calendar.HOUR_OF_DAY));
+            result.set(Calendar.MINUTE, origCalendar.get(Calendar.MINUTE));
+            result.set(Calendar.SECOND, origCalendar.get(Calendar.SECOND));
+            result.set(Calendar.MILLISECOND, origCalendar.get(Calendar.MILLISECOND));
+            return result.getTime();
+          }
+        });
+
+    TRANSLATORS.put(
+        TYPE_TIMESTAMP,
+        new TimestampTranslator() {
+          @Override
+          public Date toRaw(Config config, Object orig) {
+            if (!(orig instanceof Date)) {
+              throw new DataException(
+                  "Expected Timestamp to be a java.util.Date, but found " + orig.getClass());
+            }
+            return (Date) orig;
+          }
+
+          @Override
+          public Schema typeSchema(boolean isOptional) {
+            return isOptional ? OPTIONAL_TIMESTAMP_SCHEMA : Timestamp.SCHEMA;
+          }
+
+          @Override
+          public Date toType(Config config, Date orig) {
+            return orig;
+          }
+        });
+  }
+
+  // This is a bit unusual, but allows the transformation config to be passed to static anonymous
+  // classes to customize
+  // their behavior
+  private static class Config {
+    Config(
+        String[] fields,
+        String type,
+        SimpleDateFormat format,
+        String unixPrecision,
+        String header) {
+      this.fields = fields;
+      this.type = type;
+      this.format = format;
+      this.unixPrecision = unixPrecision;
+      this.header = header;
+    }
+
+    String[] fields;
+    String header;
+    String type;
+    final SimpleDateFormat format;
+    String unixPrecision;
+  }
+
+  private boolean isKey;
+  private Config config;
+
+  @Override
+  public void configure(Map<String, ?> configs) {
+    final SimpleConfig simpleConfig = new SimpleConfig(CONFIG_DEF, configs);
+    String fieldConfig = simpleConfig.getString(FIELD_CONFIG);
+    if (fieldConfig == null || fieldConfig.isEmpty()) {
+      fieldConfig = VALUE_FIELD;
+    }
+    final String type = simpleConfig.getString(TARGET_TYPE_CONFIG);
+    final String header = simpleConfig.getString(HEADER_KEY_CONFIG);
+    if (header == null || header.isEmpty()) {
+      throw new ConfigException("TimestampConverter requires header key to be specified");
+    }
+    String formatPattern = simpleConfig.getString(FORMAT_CONFIG);
+    final String unixPrecision = simpleConfig.getString(UNIX_PRECISION_CONFIG);
+
+    if (type.equals(TYPE_STRING) && Utils.isBlank(formatPattern)) {
+      throw new ConfigException(
+          "TimestampConverter requires format option to be specified "
+              + "when using string timestamps");
+    }
+    SimpleDateFormat format = null;
+    if (!Utils.isBlank(formatPattern)) {
+      try {
+        format = new SimpleDateFormat(formatPattern);
+        format.setTimeZone(UTC);
+      } catch (IllegalArgumentException e) {
+        throw new ConfigException(
+            "TimestampConverter requires a SimpleDateFormat-compatible pattern "
+                + "for string timestamps: "
+                + formatPattern,
+            e);
+      }
+    }
+    String[] fields = fieldConfig.split("\\.");
+    if (fields.length > 0) {
+      if (fields[0].equalsIgnoreCase(KEY_FIELD)) {
+        isKey = true;
+        // drop the first element
+        fields = Arrays.copyOfRange(fields, 1, fields.length);
+      } else {
+        isKey = false;
+        if (fields[0].equalsIgnoreCase(VALUE_FIELD)) {
+          // drop the first element
+          fields = Arrays.copyOfRange(fields, 1, fields.length);
+        }
+      }
+    } else {
+      isKey = false;
+    }
+    config = new Config(fields, type, format, unixPrecision, header);
+  }
+
+  @Override
+  public R apply(R record) {
+    if (record == null) {
+      return null;
+    }
+    SchemaAndValue result;
+    if (operatingSchema(record) == null) {
+      result = fromSchemaless(record);
+    } else {
+      result = fromRecordWithSchema(record);
+    }
+    if (result == null) {
+      return record;
+    }
+    record.headers().add(config.header, new SchemaAndValue(result.schema(), result.value()));
+    return record;
+  }
+
+  @Override
+  public ConfigDef config() {
+    return CONFIG_DEF;
+  }
+
+  @Override
+  public void close() {}
+
+  private Schema operatingSchema(R record) {
+    if (isKey) {
+      return record.keySchema();
+    }
+    return record.valueSchema();
+  }
+
+  private Object operatingValue(R record) {
+    if (isKey) {
+      return record.key();
+    }
+    return record.value();
+  }
+
+  private SchemaAndValue fromRecordWithSchema(R record) {
+    final Schema schema = operatingSchema(record);
+    if (config.fields.length == 0) {
+      Object value = operatingValue(record);
+      return convertTimestamp(value, timestampTypeFromSchema(schema));
+    } else {
+      final Struct value = requireStructOrNull(operatingValue(record), PURPOSE);
+      return from(value);
+    }
+  }
+
+  private SchemaAndValue from(Struct value) {
+    if (value == null) {
+      return null;
+    }
+    // config.fields contains the path to the field. Starting from value navigate to the field or if
+    // not found return null
+
+    // From 0 to config.fields.length-2 navigate extract a struct from the field
+    // For the last field extract the value
+    Struct updatedValue = value;
+
+    for (int i = 0; i < config.fields.length - 1; i++) {
+      updatedValue = updatedValue.getStruct(config.fields[i]);
+      if (updatedValue == null) {
+        // Starting to value's schema navigate to the field or if not found return null
+        Schema schema = null;
+        for (int j = 0; j < config.fields.length - 1; j++) {
+          final Field field = schema.field(config.fields[j]);
+          if (field == null) {
+            return null;
+          }
+          schema = field.schema();
+        }
+        // if the field is not found in the schema return null
+        if (schema == null) {
+          return null;
+        }
+
+        // fieldSchema is now the schema of the field to be converted
+        Field field = schema.field(config.fields[config.fields.length - 1]);
+        if (field == null) {
+          return null;
+        }
+        return convertTimestamp(null, timestampTypeFromSchema(field.schema()));
+      }
+    }
+    // updatedValue is now the struct containing the field to be updated
+    // config.fields[config.fields.length-1] is the name of the field to be updated
+    Field field = updatedValue.schema().field(config.fields[config.fields.length - 1]);
+    if (field == null) {
+      return null;
+    }
+    final Schema fieldSchema = field.schema();
+    final Object fieldValue = updatedValue.get(config.fields[config.fields.length - 1]);
+    return convertTimestamp(fieldValue, timestampTypeFromSchema(fieldSchema));
+  }
+
+  private SchemaAndValue fromSchemaless(R record) {
+    Object rawValue = operatingValue(record);
+    if (rawValue == null || config.fields.length == 0) {
+      return convertTimestamp(rawValue);
+    } else {
+
+      // for 0 to config.fields[config.fields.length-2] navigate to the field and extract a map
+      // for the last field extract the value
+      Map<String, Object> updatedValue = requireMap(rawValue, PURPOSE);
+      for (int i = 0; i < config.fields.length - 1; i++) {
+        updatedValue = requireMap(updatedValue.get(config.fields[i]), PURPOSE);
+        if (updatedValue == null) {
+          return null;
+        }
+      }
+      // updatedValue is now the map containing the field to be updated
+      // config.fields[config.fields.length-1] is the name of the field to be updated
+      return convertTimestamp(updatedValue.get(config.fields[config.fields.length - 1]));
+    }
+  }
+
+  /** Determine the type/format of the timestamp based on the schema. */
+  private String timestampTypeFromSchema(Schema schema) {
+    if (Timestamp.LOGICAL_NAME.equals(schema.name())) {
+      return TYPE_TIMESTAMP;
+    } else if (org.apache.kafka.connect.data.Date.LOGICAL_NAME.equals(schema.name())) {
+      return TYPE_DATE;
+    } else if (Time.LOGICAL_NAME.equals(schema.name())) {
+      return TYPE_TIME;
+    } else if (schema.type().equals(Schema.Type.STRING)) {
+      // If not otherwise specified, string == user-specified string format for timestamps
+      return TYPE_STRING;
+    } else if (schema.type().equals(Schema.Type.INT64)) {
+      // If not otherwise specified, long == unix time
+      return TYPE_UNIX;
+    }
+    throw new ConnectException(
+        "Schema " + schema + " does not correspond to a known timestamp type format.");
+  }
+
+  /** Infer the type/format of the timestamp based on the raw Java type. */
+  private String inferTimestampType(Object timestamp) {
+    // Note that we can't infer all types, e.g. Date/Time/Timestamp all have the same runtime
+    // representation as a
+    // java.util.Date
+    if (timestamp instanceof Date) {
+      return TYPE_TIMESTAMP;
+    } else if (timestamp instanceof Long) {
+      return TYPE_UNIX;
+    } else if (timestamp instanceof String) {
+      return TYPE_STRING;
+    }
+    throw new DataException(
+        "TimestampConverter does not support " + timestamp.getClass() + " objects as timestamps.");
+  }
+
+  /**
+   * Convert the given timestamp to the target timestamp format.
+   *
+   * @param timestamp the input timestamp, may be null
+   * @param timestampFormat the format of the timestamp, or null if the format should be inferred
+   * @return the converted timestamp
+   */
+  private SchemaAndValue convertTimestamp(Object timestamp, String timestampFormat) {
+    TimestampTranslator targetTranslator = TRANSLATORS.get(config.type);
+    if (targetTranslator == null) {
+      throw new ConnectException("Unsupported timestamp type: " + config.type);
+    }
+    if (timestamp == null) {
+      return new SchemaAndValue(targetTranslator.typeSchema(true), null);
+    }
+    if (timestampFormat == null) {
+      timestampFormat = inferTimestampType(timestamp);
+    }
+
+    TimestampTranslator sourceTranslator = TRANSLATORS.get(timestampFormat);
+    if (sourceTranslator == null) {
+      throw new ConnectException("Unsupported timestamp type: " + timestampFormat + ".");
+    }
+    Date rawTimestamp = sourceTranslator.toRaw(config, timestamp);
+
+    return new SchemaAndValue(
+        targetTranslator.typeSchema(true), targetTranslator.toType(config, rawTimestamp));
+  }
+
+  private SchemaAndValue convertTimestamp(Object timestamp) {
+    return convertTimestamp(timestamp, null);
+  }
+}
