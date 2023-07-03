@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.apache.kafka.common.config.ConfigDef;
@@ -24,8 +24,8 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
   private String headerKey;
   private DateTimeFormatter format;
 
-  private int rollingWindowValue;
-  private RollingWindow rollingWindow;
+  private RollingWindowDetails rollingWindowDetails;
+
   private Supplier<Instant> instantF = Instant::now;
 
   private Supplier<String> valueExtractorF;
@@ -36,54 +36,51 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   private interface ConfigName {
-    String HEADER_NAME = "header.name";
-    String ROLLING_WINDOW = "window.type";
-    String FORMAT = "format";
-    String VALUE_TYPE = "value.type";
+    String HEADER_NAME_CONFIG = "header.name";
+    String ROLLING_WINDOW_TYPE_CONFIG = "window.type";
+    String FORMAT_CONFIG = "format";
 
-    String ROLLING_WINDOW_VALUE = "window.size";
+    String VALUE_TYPE_CONFIG = "value.type";
+
+    String ROLLING_WINDOW_SIZE_CONFIG = "window.size";
 
     String VALUE_TYPE_EPOCH = "epoch";
     String VALUE_TYPE_FORMAT = "format";
   }
 
-  enum RollingWindow {
-    HOURS,
-    MINUTES,
-    SECONDS
-  }
-
   public static final ConfigDef CONFIG_DEF =
       new ConfigDef()
           .define(
-              ConfigName.HEADER_NAME,
+              ConfigName.HEADER_NAME_CONFIG,
               ConfigDef.Type.STRING,
               ConfigDef.Importance.HIGH,
               "The header name")
           .define(
-              ConfigName.ROLLING_WINDOW,
+              ConfigName.ROLLING_WINDOW_TYPE_CONFIG,
               ConfigDef.Type.STRING,
               DEFAULT_ROLLING_WINDOW.name(),
               ConfigDef.Importance.HIGH,
               "The rolling window")
           .define(
-              ConfigName.FORMAT,
+              ConfigName.FORMAT_CONFIG,
               ConfigDef.Type.STRING,
               null,
               ConfigDef.Importance.HIGH,
-              "The format of the date")
+              "The format of the date.")
           .define(
-              ConfigName.VALUE_TYPE,
+              ConfigName.VALUE_TYPE_CONFIG,
               ConfigDef.Type.STRING,
               "format",
               ConfigDef.Importance.HIGH,
-              "The type of the value, either epoch or format")
+              "The type of the value, either 'epoch' or 'format'.")
           .define(
-              ConfigName.ROLLING_WINDOW_VALUE,
+              ConfigName.ROLLING_WINDOW_SIZE_CONFIG,
               ConfigDef.Type.INT,
               DEFAULT_ROLLING_WINDOW_VALUE,
               ConfigDef.Importance.HIGH,
-              "The rolling window value");
+              "The rolling window size. For example, if the rolling window is set to 'minutes' "
+                  + "and the rolling window value is set to 15, then the rolling window "
+                  + "is 15 minutes.");
 
   /**
    * Used to testing only to inject the instant value.
@@ -115,27 +112,30 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
   @Override
   public void configure(Map<String, ?> props) {
     final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
-    headerKey = config.getString(ConfigName.HEADER_NAME);
+    headerKey = config.getString(ConfigName.HEADER_NAME_CONFIG);
     if (headerKey == null) {
-      throw new ConfigException("Configuration '" + ConfigName.HEADER_NAME + "' must be set.");
+      throw new ConfigException(
+          "Configuration '" + ConfigName.HEADER_NAME_CONFIG + "' must be set.");
     } else if (headerKey.isEmpty()) {
       throw new ConfigException(
-          "Configuration '" + ConfigName.HEADER_NAME + "' must not be empty.");
+          "Configuration '" + ConfigName.HEADER_NAME_CONFIG + "' must not be empty.");
     }
-    String valueType = config.getString(ConfigName.VALUE_TYPE);
+    String valueType = config.getString(ConfigName.VALUE_TYPE_CONFIG);
     if (valueType == null) {
-      throw new ConfigException("Configuration '" + ConfigName.VALUE_TYPE + "' must be set.");
+      throw new ConfigException(
+          "Configuration '" + ConfigName.VALUE_TYPE_CONFIG + "' must be set.");
     } else if (valueType.isEmpty()) {
-      throw new ConfigException("Configuration '" + ConfigName.VALUE_TYPE + "' must not be empty.");
+      throw new ConfigException(
+          "Configuration '" + ConfigName.VALUE_TYPE_CONFIG + "' must not be empty.");
     } else if (!valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_EPOCH)
         && !valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_FORMAT)) {
       throw new ConfigException(
           "Configuration '"
-              + ConfigName.VALUE_TYPE
+              + ConfigName.VALUE_TYPE_CONFIG
               + "' must be set to either 'epoch' or 'format'.");
     }
     if (valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_FORMAT)) {
-      final String pattern = config.getString(ConfigName.FORMAT);
+      final String pattern = config.getString(ConfigName.FORMAT_CONFIG);
       if (pattern == null) {
         format = DEFAULT_FORMATTER;
       } else {
@@ -143,7 +143,7 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
           format = DateTimeFormatter.ofPattern(pattern);
         } catch (IllegalArgumentException e) {
           throw new ConfigException(
-              "Configuration '" + ConfigName.FORMAT + "' is not a valid date format.", e);
+              "Configuration '" + ConfigName.FORMAT_CONFIG + "' is not a valid date format.", e);
         }
       }
       valueExtractorF = this::getFormattedValue;
@@ -151,98 +151,36 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
       valueExtractorF = this::getEpochValue;
     }
 
-    // extract the rolling window and rolling window value
-    String rollingWindow = config.getString(ConfigName.ROLLING_WINDOW);
-    if (rollingWindow == null) {
-      throw new ConfigException("Configuration '" + ConfigName.ROLLING_WINDOW + "' must be set.");
-    } else {
-      try {
-        this.rollingWindow = RollingWindow.valueOf(rollingWindow.toUpperCase());
-      } catch (IllegalArgumentException e) {
-        throw new ConfigException(
-            "Configuration '" + ConfigName.ROLLING_WINDOW + "' is not a valid rolling window.");
-      }
-    }
+    final RollingWindow rollingWindow =
+        RollingWindowUtils.extractRollingWindow(
+                config, ConfigName.ROLLING_WINDOW_TYPE_CONFIG, Collections.emptySet())
+            .orElseThrow(
+                () ->
+                    new ConfigException(
+                        "Configuration '"
+                            + ConfigName.ROLLING_WINDOW_TYPE_CONFIG
+                            + "' must be set."));
 
-    rollingWindowValue = config.getInt(ConfigName.ROLLING_WINDOW_VALUE);
-    // validate the value to be positive int and if
-    // rolling window is minutes it cannot be more than 60
-    // rolling window is hours it cannot be more than 24
-    // rolling window is seconds it cannot be more than 60
-    if (rollingWindowValue <= 0) {
-      throw new ConfigException(
-          "Configuration '" + ConfigName.ROLLING_WINDOW_VALUE + "' must be a positive integer.");
-    } else if (this.rollingWindow == RollingWindow.MINUTES && rollingWindowValue > 60) {
-      throw new ConfigException(
-          "Configuration '"
-              + ConfigName.ROLLING_WINDOW_VALUE
-              + "' must be less than or equal to 60.");
-    } else if (this.rollingWindow == RollingWindow.HOURS && rollingWindowValue > 24) {
-      throw new ConfigException(
-          "Configuration '"
-              + ConfigName.ROLLING_WINDOW_VALUE
-              + "' must be less than or equal to 24.");
-    } else if (this.rollingWindow == RollingWindow.SECONDS && rollingWindowValue > 60) {
-      throw new ConfigException(
-          "Configuration '"
-              + ConfigName.ROLLING_WINDOW_VALUE
-              + "' must be less than or equal to 60.");
-    }
-  }
+    final int rollingWindowSize =
+        RollingWindowUtils.extractRollingWindowSize(
+                config, rollingWindow, ConfigName.ROLLING_WINDOW_SIZE_CONFIG)
+            .orElseThrow(
+                () ->
+                    new ConfigException(
+                        "Configuration '"
+                            + ConfigName.ROLLING_WINDOW_SIZE_CONFIG
+                            + "' must be set."));
 
-  /**
-   * Adjust the instant based on the rolling window type and rolling window value. Considering that
-   * the instant is in UTC, the adjusted instant will be truncated to the nearest window start. For
-   * example if the rolling window is minutes and the value is 15, then all instants where minute is
-   * [0,15) will be adjusted to the start of the minute 0, for [15, 30) will be adjusted to the
-   * start of the minute 15, for [30, 45) will be adjusted to the start of the minute 30 and for
-   * [45, 60) will be adjusted to the start of the minute 45, and for [45, 60) will be adjusted to
-   * the start of the minute 45.
-   *
-   * @return - the adjusted instant
-   */
-  private Instant getAdjustedInstant() {
-    final Instant wallclock = instantF.get();
-    Instant windowStart = wallclock;
-
-    // There is a discrete set of time windows, each window has a start time and a duration -
-    // defined by rolling window value
-    // The start time of the window is the time instant that is the start of the window.
-    // Any instant that falls within the window will be adjusted to the start of the window.
-
-    switch (rollingWindow) {
-      case MINUTES:
-        windowStart =
-            wallclock
-                .minusSeconds(wallclock.getEpochSecond() % (rollingWindowValue * 60))
-                .truncatedTo(ChronoUnit.MINUTES);
-        break;
-      case HOURS:
-        windowStart =
-            wallclock
-                .minusSeconds(wallclock.getEpochSecond() % (rollingWindowValue * 60 * 60))
-                .truncatedTo(ChronoUnit.HOURS);
-        break;
-      case SECONDS:
-        windowStart =
-            wallclock
-                .minusSeconds(wallclock.getEpochSecond() % rollingWindowValue)
-                .truncatedTo(ChronoUnit.SECONDS);
-        break;
-
-      default:
-        throw new ConfigException("Invalid rolling window type");
-    }
-    return windowStart;
+    this.rollingWindowDetails = new RollingWindowDetails(rollingWindow, rollingWindowSize);
   }
 
   private String getEpochValue() {
-    Instant wallclock = getAdjustedInstant();
+    Instant wallclock = rollingWindowDetails.adjust(instantF.get());
     return String.valueOf(wallclock.toEpochMilli());
   }
 
   private String getFormattedValue() {
-    Instant wallclock = getAdjustedInstant();
+    Instant wallclock = rollingWindowDetails.adjust(instantF.get());
 
     OffsetDateTime dateTime = OffsetDateTime.ofInstant(wallclock, ZoneOffset.UTC);
     return format.format(dateTime);

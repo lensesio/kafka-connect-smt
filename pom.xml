@@ -115,6 +115,34 @@
                     <reuseForks>false</reuseForks>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>4.2</version>
+                <configuration>
+                    <licenseSets>
+                        <licenseSet>
+                            <header>${project.basedir}/src/main/resources/license-header.txt</header>
+                            <excludes>
+                                <exclude>**/README</exclude>
+                                <exclude>${project.basedir}/src/test/resources/**</exclude>
+                                <exclude>${project.basedir}/src/main/resources/**</exclude>
+                            </excludes>
+                        </licenseSet>
+                    </licenseSets>
+                    <header>src/main/resources/license-header.txt</header>
+                    <includes>
+                        <include>**/*.java</include>
+                    </includes>
+                    <excludes>
+                        <exclude>**/generated/**/*.java</exclude>
+                    </excludes>
+                    <mapping>
+                        <java>SLASHSTAR</java>
+                    </mapping>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

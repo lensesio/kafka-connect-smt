@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.GregorianCalendar;
@@ -34,7 +37,7 @@ public class TimestampConverterTest {
   private static final long DATE_PLUS_TIME_UNIX_MICROS;
   private static final long DATE_PLUS_TIME_UNIX_NANOS;
   private static final long DATE_PLUS_TIME_UNIX_SECONDS;
-  private static final String STRING_DATE_FMT = "yyyy MM dd HH mm ss SSS z";
+  private static final String STRING_DATE_FMT = "yyyy MM dd HH mm ss SSS zzz";
   private static final String DATE_PLUS_TIME_STRING;
 
   static {
@@ -116,7 +119,7 @@ public class TimestampConverterTest {
   public void testConfigInvalidFormat() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
-    config.put(TimestampConverter.FORMAT_CONFIG, "bad-format");
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, "bad-format");
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     assertThrows(ConfigException.class, () -> transformer.configure(config));
@@ -188,7 +191,7 @@ public class TimestampConverterTest {
   public void testSchemalessTimestampToString() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "str_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -251,7 +254,7 @@ public class TimestampConverterTest {
   public void testSchemalessStringToTimestamp() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -333,7 +336,7 @@ public class TimestampConverterTest {
   public void testWithSchemaTimestampToString() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "str_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -381,7 +384,8 @@ public class TimestampConverterTest {
   private void testSchemalessNullValueConversion(String targetType) {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, targetType);
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -395,7 +399,8 @@ public class TimestampConverterTest {
   private void testSchemalessNullFieldConversion(String targetType) {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, targetType);
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
@@ -461,7 +466,7 @@ public class TimestampConverterTest {
   public void testWithSchemaStringToTimestamp() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -640,7 +645,8 @@ public class TimestampConverterTest {
       String targetType, Schema originalSchema, Schema expectedSchema) {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, targetType);
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -656,7 +662,8 @@ public class TimestampConverterTest {
       String targetType, Schema originalSchema, Schema expectedSchema) {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, targetType);
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
@@ -812,11 +819,139 @@ public class TimestampConverterTest {
   }
 
   @Test
+  public void testWithSchemaValuePrefixedFieldConversion_Seconds() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_value.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build();
+    Struct original = new Struct(structWithTimestampFieldSchema);
+    original.put("ts", DATE_PLUS_TIME_UNIX_SECONDS);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial = createRecordWithSchema(structWithTimestampFieldSchema, original);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Calendar expectedDate = GregorianCalendar.getInstance(UTC);
+    expectedDate.setTimeInMillis(0L);
+    expectedDate.add(Calendar.DATE, 1);
+    expectedDate.add(Calendar.SECOND, 1);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    assertEquals(expectedDate.getTime(), header.value());
+  }
+
+  @Test
+  public void testWithSchemaKeyPrefixedFieldConversion_Seconds() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build();
+    Struct original = new Struct(structWithTimestampFieldSchema);
+    original.put("ts", DATE_PLUS_TIME_UNIX_SECONDS);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, original, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Calendar expectedDate = GregorianCalendar.getInstance(UTC);
+    expectedDate.setTimeInMillis(0L);
+    expectedDate.add(Calendar.DATE, 1);
+    expectedDate.add(Calendar.SECOND, 1);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    assertEquals(expectedDate.getTime(), header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedFieldConversion_Seconds() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "level1.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build());
+    tsStruct.put("ts", DATE_PLUS_TIME_UNIX_SECONDS);
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial = createRecordWithSchema(structWithTimestampFieldSchema, rootStruct);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Calendar expectedDate = GregorianCalendar.getInstance(UTC);
+    expectedDate.setTimeInMillis(0L);
+    expectedDate.add(Calendar.DATE, 1);
+    expectedDate.add(Calendar.SECOND, 1);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    assertEquals(expectedDate.getTime(), header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedKeyFieldConversion_Seconds() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build());
+    tsStruct.put("ts", DATE_PLUS_TIME_UNIX_SECONDS);
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, rootStruct, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Calendar expectedDate = GregorianCalendar.getInstance(UTC);
+    expectedDate.setTimeInMillis(0L);
+    expectedDate.add(Calendar.DATE, 1);
+    expectedDate.add(Calendar.SECOND, 1);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    assertEquals(expectedDate.getTime(), header.value());
+  }
+
+  @Test
   public void testSchemalessStringToUnix_Micros() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "microseconds");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -833,7 +968,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "nanoseconds");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -850,7 +985,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.FORMAT_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
@@ -880,6 +1015,205 @@ public class TimestampConverterTest {
     assertNotNull(header);
     assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
     assertEquals(DATE_PLUS_TIME.getTime(), header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedKeyFieldConversion15SecondsWindow() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "seconds");
+    config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "15");
+
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build());
+
+    Instant start = Instant.parse("2018-01-01T12:12:12.122Z");
+
+    tsStruct.put("ts", start.getEpochSecond());
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, rootStruct, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    final Instant expected = Instant.parse("2018-01-01T12:12:00.000Z");
+    final java.util.Date expectedDate = java.util.Date.from(expected);
+    assertEquals(expectedDate, header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedKeyFieldConversion2HoursTimestampWindow() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "hours");
+    config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "2");
+
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build());
+
+    Instant start = Instant.parse("2018-01-01T13:12:12.122Z");
+
+    tsStruct.put("ts", start.getEpochSecond());
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, rootStruct, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    final Instant expected = Instant.parse("2018-01-01T12:00:00.000Z");
+    final java.util.Date expectedDate = java.util.Date.from(expected);
+    assertEquals(expectedDate, header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedKeyFieldConversion2HoursStringWindow() {
+
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "hours");
+    config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "2");
+
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.STRING_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.STRING_SCHEMA).build());
+
+    Instant start = Instant.parse("2018-01-01T13:12:12.122Z");
+    String originalString =
+        DateTimeFormatter.ofPattern(STRING_DATE_FMT).withZone(ZoneOffset.UTC).format(start);
+
+    tsStruct.put("ts", originalString);
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, rootStruct, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Schema.Type.STRING, header.schema().type());
+
+    assertEquals("2018 01 01 12 00 00 000 UTC", header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedKeyFieldConversion2HoursStringWindowWhenSourceIsString() {
+
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
+    config.put(TimestampConverter.FORMAT_TO_CONFIG, "yyyy-MM-dd HH:mm");
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "hours");
+    config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "2");
+
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.STRING_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.STRING_SCHEMA).build());
+
+    Instant start = Instant.parse("2018-01-01T13:12:12.122Z");
+    String originalString =
+        DateTimeFormatter.ofPattern(STRING_DATE_FMT).withZone(ZoneOffset.UTC).format(start);
+
+    tsStruct.put("ts", originalString);
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, rootStruct, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Schema.Type.STRING, header.schema().type());
+
+    assertEquals("2018-01-01 12:00", header.value());
+  }
+
+  @Test
+  public void testWithSchemaNestedKeyFieldConversion10MinutesWindow() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "minutes");
+    config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "10");
+
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct()
+            .field("level1", SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build())
+            .build();
+    Struct rootStruct = new Struct(structWithTimestampFieldSchema);
+    Struct tsStruct = new Struct(SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build());
+
+    // Get epoch for 2018-01-01T12:12:12.122Z
+    Instant start = Instant.parse("2018-01-01T12:12:12.122Z");
+
+    tsStruct.put("ts", start.getEpochSecond());
+    rootStruct.put("level1", tsStruct);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null, null, "topic", 0, structWithTimestampFieldSchema, rootStruct, null, null);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    final Instant expected = Instant.parse("2018-01-01T12:10:00.000Z");
+    final java.util.Date expectedDate = java.util.Date.from(expected);
+    assertEquals(expectedDate, header.value());
   }
 
   private SourceRecord createRecordWithSchema(Schema schema, Object value) {

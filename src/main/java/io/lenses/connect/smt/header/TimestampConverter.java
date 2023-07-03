@@ -3,13 +3,19 @@ package io.lenses.connect.smt.header;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStructOrNull;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.common.config.ConfigDef;
@@ -40,8 +46,10 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
   public static final String TARGET_TYPE_CONFIG = "target.type";
 
-  public static final String FORMAT_CONFIG = "format";
-  private static final String FORMAT_DEFAULT = "";
+  public static final String ROLLING_WINDOW_TYPE_CONFIG = "rolling.window.type";
+  public static final String ROLLING_WINDOW_SIZE_CONFIG = "rolling.window.size";
+  public static final String FORMAT_FROM_CONFIG = "format.from.pattern";
+  public static final String FORMAT_TO_CONFIG = "format.to.pattern";
 
   private static final String KEY_FIELD = "_key";
   private static final String VALUE_FIELD = "_value";
@@ -100,12 +108,21 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               ConfigDef.Importance.HIGH,
               "The desired timestamp representation: string, unix, Date, Time, or Timestamp")
           .define(
-              FORMAT_CONFIG,
+              FORMAT_FROM_CONFIG,
               ConfigDef.Type.STRING,
-              FORMAT_DEFAULT,
+              null,
+              ConfigDef.Importance.MEDIUM,
+              "A SimpleDateFormat-compatible format for the timestamp. Used to parse the"
+                  + " input if the input is a string.")
+          .define(
+              FORMAT_TO_CONFIG,
+              ConfigDef.Type.STRING,
+              null,
               ConfigDef.Importance.MEDIUM,
               "A SimpleDateFormat-compatible format for the timestamp. Used to generate the output "
-                  + " when type=string or used to parse the input if the input is a string.")
+                  + " when '"
+                  + TARGET_TYPE_CONFIG
+                  + "' is set to string.")
           .define(
               UNIX_PRECISION_CONFIG,
               ConfigDef.Type.STRING,
@@ -117,7 +134,23 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               "The desired Unix precision for the timestamp: seconds, milliseconds, microseconds, "
                   + "or nanoseconds. Used to generate the output when type=unix or used to parse "
                   + "the input if the input is a Long. This SMT will cause precision loss during "
-                  + "conversions from, and to, values with sub-millisecond components.");
+                  + "conversions from, and to, values with sub-millisecond components.")
+          .define(
+              ROLLING_WINDOW_TYPE_CONFIG,
+              ConfigDef.Type.STRING,
+              "none",
+              ConfigDef.ValidString.in("none", "hours", "minutes", "seconds"),
+              ConfigDef.Importance.LOW,
+              "An optional desired rolling window type: 'none', 'hours', 'minutes' or 'seconds'."
+                  + " Default is 'none'.")
+          .define(
+              ROLLING_WINDOW_SIZE_CONFIG,
+              ConfigDef.Type.INT,
+              null,
+              ConfigDef.Importance.LOW,
+              "The rolling window size. For example, if the rolling window is set to 'minutes' "
+                  + "and the rolling window value is set to 15, then "
+                  + "the rolling window is 15 minutes.");
 
   private interface TimestampTranslator {
     /** Convert from the type-specific format to the universal java.util.Date format */
@@ -142,14 +175,24 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               throw new DataException(
                   "Expected string timestamp to be a String, but found " + orig.getClass());
             }
+            if (config.fromFormat == null) {
+              throw new DataException(
+                  "Input format is not specified, and input data is string. "
+                      + "Please specify the input format using the '"
+                      + FORMAT_FROM_CONFIG
+                      + "' configuration property.");
+            }
             try {
-              return config.format.parse((String) orig);
-            } catch (ParseException e) {
+              final LocalDateTime localDateTime =
+                  LocalDateTime.parse((String) orig, config.fromFormat);
+              localDateTime.atZone(ZoneOffset.UTC);
+              return Date.from(localDateTime.atZone(ZoneOffset.UTC).toInstant());
+            } catch (DateTimeParseException e) {
               throw new DataException(
                   "Could not parse timestamp: value ("
                       + orig
                       + ") does not match pattern ("
-                      + config.format.toPattern()
+                      + config.fromFormatPattern
                       + ")",
                   e);
             }
@@ -162,9 +205,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
           @Override
           public String toType(Config config, Date orig) {
-            synchronized (config.format) {
-              return config.format.format(orig);
-            }
+            return config.toFormat.format(orig.toInstant());
           }
         });
 
@@ -310,21 +351,34 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     Config(
         String[] fields,
         String type,
-        SimpleDateFormat format,
+        DateTimeFormatter fromFormat,
+        String fromFormatPattern,
+        DateTimeFormatter toFormat,
+        String toFormatPattern,
         String unixPrecision,
-        String header) {
+        String header,
+        Optional<RollingWindowDetails> rollingWindow) {
       this.fields = fields;
       this.type = type;
-      this.format = format;
+      this.fromFormat = fromFormat;
+      this.fromFormatPattern = fromFormatPattern;
+      this.toFormatPattern = toFormatPattern;
+      this.toFormat = toFormat;
       this.unixPrecision = unixPrecision;
       this.header = header;
+      this.rollingWindow = rollingWindow;
     }
 
     String[] fields;
     String header;
     String type;
-    final SimpleDateFormat format;
+    String fromFormatPattern;
+    String toFormatPattern;
+    final DateTimeFormatter fromFormat;
+    final DateTimeFormatter toFormat;
     String unixPrecision;
+
+    Optional<RollingWindowDetails> rollingWindow;
   }
 
   private boolean isKey;
@@ -342,27 +396,20 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     if (header == null || header.isEmpty()) {
       throw new ConfigException("TimestampConverter requires header key to be specified");
     }
-    String formatPattern = simpleConfig.getString(FORMAT_CONFIG);
+    String fromFormatPattern = simpleConfig.getString(FORMAT_FROM_CONFIG);
+    String toFormatPattern = simpleConfig.getString(FORMAT_TO_CONFIG);
+
     final String unixPrecision = simpleConfig.getString(UNIX_PRECISION_CONFIG);
 
-    if (type.equals(TYPE_STRING) && Utils.isBlank(formatPattern)) {
+    if (type.equals(TYPE_STRING) && Utils.isBlank(toFormatPattern)) {
       throw new ConfigException(
           "TimestampConverter requires format option to be specified "
               + "when using string timestamps");
     }
-    SimpleDateFormat format = null;
-    if (!Utils.isBlank(formatPattern)) {
-      try {
-        format = new SimpleDateFormat(formatPattern);
-        format.setTimeZone(UTC);
-      } catch (IllegalArgumentException e) {
-        throw new ConfigException(
-            "TimestampConverter requires a SimpleDateFormat-compatible pattern "
-                + "for string timestamps: "
-                + formatPattern,
-            e);
-      }
-    }
+    DateTimeFormatter fromPattern =
+        io.lenses.connect.smt.header.Utils.getDateFormat(fromFormatPattern);
+    DateTimeFormatter toPattern = io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern);
+
     String[] fields = fieldConfig.split("\\.");
     if (fields.length > 0) {
       if (fields[0].equalsIgnoreCase(KEY_FIELD)) {
@@ -379,7 +426,36 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     } else {
       isKey = false;
     }
-    config = new Config(fields, type, format, unixPrecision, header);
+
+    // ignore NONE as a rolling window type
+    final HashSet<String> ignoredRollingWindowTypes =
+        new HashSet<>(Collections.singletonList("NONE"));
+    Optional<RollingWindow> rollingWindow =
+        RollingWindowUtils.extractRollingWindow(
+            simpleConfig, ROLLING_WINDOW_TYPE_CONFIG, ignoredRollingWindowTypes);
+    Optional<RollingWindowDetails> rollingWindowDetails =
+        rollingWindow.flatMap(
+            rw ->
+                RollingWindowUtils.extractRollingWindowSize(
+                        simpleConfig, rw, ROLLING_WINDOW_SIZE_CONFIG)
+                    .map(size -> new RollingWindowDetails(rw, size)));
+    // if rolling window is set, check that the window size is set
+    if (rollingWindow.isPresent() && !rollingWindowDetails.isPresent()) {
+      throw new ConfigException(
+          "TimestampConverter requires a window size to be specified "
+              + "when using rolling window timestamps.");
+    }
+    config =
+        new Config(
+            fields,
+            type,
+            fromPattern,
+            fromFormatPattern,
+            toPattern,
+            toFormatPattern,
+            unixPrecision,
+            header,
+            rollingWindowDetails);
   }
 
   @Override
@@ -559,10 +635,21 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     if (sourceTranslator == null) {
       throw new ConnectException("Unsupported timestamp type: " + timestampFormat + ".");
     }
-    Date rawTimestamp = sourceTranslator.toRaw(config, timestamp);
+    final Date rawTimestamp = sourceTranslator.toRaw(config, timestamp);
+
+    final Date adjustedTimestamp =
+        config
+            .rollingWindow
+            .map(
+                rw -> {
+                  final Instant instant = rawTimestamp.toInstant();
+                  final Instant adjusted = rw.adjust(instant);
+                  return Date.from(adjusted);
+                })
+            .orElse(rawTimestamp);
 
     return new SchemaAndValue(
-        targetTranslator.typeSchema(true), targetTranslator.toType(config, rawTimestamp));
+        targetTranslator.typeSchema(true), targetTranslator.toType(config, adjustedTimestamp));
   }
 
   private SchemaAndValue convertTimestamp(Object timestamp) {
