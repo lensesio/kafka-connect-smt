@@ -533,26 +533,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     for (int i = 0; i < config.fields.length - 1; i++) {
       updatedValue = updatedValue.getStruct(config.fields[i]);
       if (updatedValue == null) {
-        // Starting to value's schema navigate to the field or if not found return null
-        Schema schema = null;
-        for (int j = 0; j < config.fields.length - 1; j++) {
-          final Field field = schema.field(config.fields[j]);
-          if (field == null) {
-            return null;
-          }
-          schema = field.schema();
-        }
-        // if the field is not found in the schema return null
-        if (schema == null) {
-          return null;
-        }
-
-        // fieldSchema is now the schema of the field to be converted
-        Field field = schema.field(config.fields[config.fields.length - 1]);
-        if (field == null) {
-          return null;
-        }
-        return convertTimestamp(null, timestampTypeFromSchema(field.schema()));
+        return null;
       }
     }
     // updatedValue is now the struct containing the field to be updated
