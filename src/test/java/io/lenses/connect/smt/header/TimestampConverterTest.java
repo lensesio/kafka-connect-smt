@@ -8,6 +8,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
+
 package io.lenses.connect.smt.header;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -111,7 +112,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     assertDoesNotThrow(() -> transformer.configure(config));
   }
@@ -121,7 +122,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     assertThrows(ConfigException.class, () -> transformer.configure(config));
   }
 
@@ -130,7 +131,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.FORMAT_TO_CONFIG, "bad-format");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     assertThrows(ConfigException.class, () -> transformer.configure(config));
   }
@@ -142,7 +143,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -157,7 +158,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -172,7 +173,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Time");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -187,7 +188,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -202,7 +203,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "str_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "str_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
@@ -220,7 +221,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE.getTime()));
 
@@ -235,7 +236,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(TIME.getTime()));
 
@@ -250,7 +251,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME_UNIX));
 
@@ -265,7 +266,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME_STRING));
@@ -283,7 +284,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Timestamp.SCHEMA, DATE_PLUS_TIME.getTime()));
@@ -299,7 +300,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "dt_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "dt_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Timestamp.SCHEMA, DATE_PLUS_TIME.getTime()));
@@ -315,7 +316,7 @@ public class TimestampConverterTest {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Time");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "tm_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "tm_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Timestamp.SCHEMA, DATE_PLUS_TIME.getTime()));
@@ -331,7 +332,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "unix_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "unix_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Timestamp.SCHEMA, DATE_PLUS_TIME.getTime()));
@@ -347,7 +348,7 @@ public class TimestampConverterTest {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "str_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "str_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed =
@@ -396,7 +397,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, targetType);
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "a_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(null));
@@ -412,7 +413,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "a_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(null));
@@ -429,7 +430,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Date.SCHEMA, DATE.getTime()));
@@ -445,7 +446,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Time.SCHEMA, TIME.getTime()));
@@ -461,7 +462,7 @@ public class TimestampConverterTest {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Schema.INT64_SCHEMA, DATE_PLUS_TIME_UNIX));
@@ -477,7 +478,7 @@ public class TimestampConverterTest {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed =
@@ -657,7 +658,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, targetType);
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "a_header");
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordWithSchema(originalSchema, null));
@@ -675,7 +676,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "a_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "a_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     final SchemaBuilder structSchema =
@@ -708,7 +709,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
 
@@ -726,7 +727,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
 
@@ -755,7 +756,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "microseconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
 
@@ -780,7 +781,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "nanoseconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
 
@@ -805,7 +806,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     // ts field is a unix timestamp with seconds precision
     Schema structWithTimestampFieldSchema =
         SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build();
@@ -834,7 +835,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_value.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     // ts field is a unix timestamp with seconds precision
     Schema structWithTimestampFieldSchema =
         SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build();
@@ -863,7 +864,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     // ts field is a unix timestamp with seconds precision
     Schema structWithTimestampFieldSchema =
         SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build();
@@ -894,7 +895,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "level1.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     // ts field is a unix timestamp with seconds precision
     Schema structWithTimestampFieldSchema =
         SchemaBuilder.struct()
@@ -927,7 +928,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     // ts field is a unix timestamp with seconds precision
     Schema structWithTimestampFieldSchema =
         SchemaBuilder.struct()
@@ -962,7 +963,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "microseconds");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME_STRING));
@@ -979,7 +980,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "nanoseconds");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME_STRING));
@@ -996,7 +997,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME_STRING));
@@ -1014,7 +1015,7 @@ public class TimestampConverterTest {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed =
@@ -1033,7 +1034,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "seconds");
     config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "15");
 
@@ -1071,7 +1072,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "hours");
     config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "2");
 
@@ -1112,7 +1113,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "hours");
     config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "2");
 
@@ -1154,7 +1155,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
     config.put(TimestampConverter.FORMAT_TO_CONFIG, "yyyy-MM-dd HH:mm");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "hours");
     config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "2");
 
@@ -1193,7 +1194,7 @@ public class TimestampConverterTest {
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
-    config.put(TimestampConverter.HEADER_KEY_CONFIG, "ts_header");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
     config.put(TimestampConverter.ROLLING_WINDOW_TYPE_CONFIG, "minutes");
     config.put(TimestampConverter.ROLLING_WINDOW_SIZE_CONFIG, "10");
 

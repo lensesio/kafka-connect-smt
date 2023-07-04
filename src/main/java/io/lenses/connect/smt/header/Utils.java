@@ -8,6 +8,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
+
 package io.lenses.connect.smt.header;
 
 import java.time.format.DateTimeFormatter;
@@ -27,7 +28,7 @@ class Utils {
         format = DateTimeFormatter.ofPattern(formatPattern).withZone(UTC.toZoneId());
       } catch (IllegalArgumentException e) {
         throw new ConfigException(
-            "TimestampConverter requires a SimpleDateFormat-compatible pattern "
+            "TimestampConverter requires a DateTimeFormatter-compatible pattern "
                 + "for string timestamps: "
                 + formatPattern,
             e);

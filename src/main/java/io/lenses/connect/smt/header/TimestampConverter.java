@@ -8,6 +8,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
+
 package io.lenses.connect.smt.header;
 
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
@@ -52,7 +53,7 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
  */
 public final class TimestampConverter<R extends ConnectRecord<R>> implements Transformation<R> {
   public static final String FIELD_CONFIG = "field";
-  public static final String HEADER_KEY_CONFIG = "header.key";
+  public static final String HEADER_NAME_CONFIG = "header.name";
 
   public static final String TARGET_TYPE_CONFIG = "target.type";
 
@@ -104,7 +105,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
                   + VALUE_FIELD
                   + "'.")
           .define(
-              HEADER_KEY_CONFIG,
+              HEADER_NAME_CONFIG,
               ConfigDef.Type.STRING,
               null,
               ConfigDef.Importance.HIGH,
@@ -122,15 +123,15 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               ConfigDef.Type.STRING,
               null,
               ConfigDef.Importance.MEDIUM,
-              "A SimpleDateFormat-compatible format for the timestamp. Used to parse the"
+              "A DateTimeFormatter-compatible format for the timestamp. Used to parse the"
                   + " input if the input is a string.")
           .define(
               FORMAT_TO_CONFIG,
               ConfigDef.Type.STRING,
               null,
               ConfigDef.Importance.MEDIUM,
-              "A SimpleDateFormat-compatible format for the timestamp. Used to generate the output "
-                  + " when '"
+              "A DateTimeFormatter-compatible format for the timestamp. Used to generate the "
+                  + " output when '"
                   + TARGET_TYPE_CONFIG
                   + "' is set to string.")
           .define(
@@ -159,8 +160,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               null,
               ConfigDef.Importance.LOW,
               "The rolling window size. For example, if the rolling window is set to 'minutes' "
-                  + "and the rolling window value is set to 15, then "
-                  + "the rolling window is 15 minutes.");
+                  + "size is set to 15.");
 
   private interface TimestampTranslator {
     /** Convert from the type-specific format to the universal java.util.Date format */
@@ -402,7 +402,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
       fieldConfig = VALUE_FIELD;
     }
     final String type = simpleConfig.getString(TARGET_TYPE_CONFIG);
-    final String header = simpleConfig.getString(HEADER_KEY_CONFIG);
+    final String header = simpleConfig.getString(HEADER_NAME_CONFIG);
     if (header == null || header.isEmpty()) {
       throw new ConfigException("TimestampConverter requires header key to be specified");
     }

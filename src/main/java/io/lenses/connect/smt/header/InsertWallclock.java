@@ -8,6 +8,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
+
 package io.lenses.connect.smt.header;
 
 import java.time.Instant;
@@ -33,7 +34,7 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
  *
  * <pre>{@code
  * "transforms": "insertWallclockHeader",
- * "transforms.insertWallclockHeader.type": "io.lenses.connect.smt.InsertWallclockHeader",
+ * "transforms.insertWallclockHeader.type": "io.lenses.connect.smt.header.InsertWallclock",
  * "transforms.insertWallclockHeader.header.name": "wallclock",
  * "transforms.insertWallclockHeader.value.type": "epoch"
  *
@@ -41,7 +42,7 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
  *
  * <pre>{@code
  * "transforms": "insertWallclockHeader",
- * "transforms.insertWallclockHeader.type": "io.lenses.connect.smt.InsertWallclockHeader",
+ * "transforms.insertWallclockHeader.type": "io.lenses.connect.smt.header.InsertWallclock",
  * "transforms.insertWallclockHeader.header.name": "wallclock",
  * "transforms.insertWallclockHeader.value.type": "format",
  * "transforms.insertWallclockHeader.format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"

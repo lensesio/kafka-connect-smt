@@ -8,6 +8,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
+
 package io.lenses.connect.smt.header;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -153,8 +154,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "format");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "minutes");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "minutes");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -183,8 +184,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "epoch");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "minutes");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "minutes");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -224,8 +225,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "format");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "hours");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "hours");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -254,8 +255,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "epoch");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "hours");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "hours");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -306,8 +307,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "format");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "hours");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "hours");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -336,8 +337,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "epoch");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "hours");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "hours");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -389,8 +390,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "format");
           configs.put("format", "yyyy-MM-dd HH:mm:ss");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "seconds");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "seconds");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));
@@ -419,8 +420,8 @@ public class InsertRollingWallclockTest {
           configs.put("header.name", "wallclock");
           configs.put("value.type", "epoch");
           configs.put("format", "yyyy-MM-dd HH:mm");
-          configs.put("window.size", scenario.second.toString());
-          configs.put("window.type", "seconds");
+          configs.put("rolling.window.size", scenario.second.toString());
+          configs.put("rolling.window.type", "seconds");
           final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
           transformer.configure(configs);
           transformer.setInstantF(() -> Instant.parse(scenario.first));

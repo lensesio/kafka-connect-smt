@@ -8,6 +8,7 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
+
 package io.lenses.connect.smt.header;
 
 import java.time.Instant;
@@ -47,12 +48,12 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
 
   private interface ConfigName {
     String HEADER_NAME_CONFIG = "header.name";
-    String ROLLING_WINDOW_TYPE_CONFIG = "window.type";
+    String ROLLING_WINDOW_TYPE_CONFIG = "rolling.window.type";
     String FORMAT_CONFIG = "format";
 
     String VALUE_TYPE_CONFIG = "value.type";
 
-    String ROLLING_WINDOW_SIZE_CONFIG = "window.size";
+    String ROLLING_WINDOW_SIZE_CONFIG = "rolling.window.size";
 
     String VALUE_TYPE_EPOCH = "epoch";
     String VALUE_TYPE_FORMAT = "format";
@@ -70,7 +71,7 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
               ConfigDef.Type.STRING,
               DEFAULT_ROLLING_WINDOW.name(),
               ConfigDef.Importance.HIGH,
-              "The rolling window")
+              "The rolling window type. The allowed values are hours, minutes or seconds.")
           .define(
               ConfigName.FORMAT_CONFIG,
               ConfigDef.Type.STRING,
