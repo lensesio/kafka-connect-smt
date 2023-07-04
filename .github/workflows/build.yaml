@@ -16,12 +16,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up JDK
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           java-version: '11'
+          distribution: 'temurin'
 
       - name: Extract tag name
         id: extract_tag
@@ -51,12 +52,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up JDK
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           java-version: '11' # Or the desired Java version
+          distribution: 'temurin'
 
       - name: Extract tag name
         id: extract_tag
