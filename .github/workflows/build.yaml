@@ -26,7 +26,7 @@ jobs:
 
       - name: Extract tag name
         id: extract_tag
-        run: echo "{TAG_NAME}={${GITHUB_REF#refs/tags/}}" >> $GITHUB_OUTPUT
+        run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
 
       - name: Update Maven version
         run: mvn versions:set -DnewVersion=${{ steps.extract_tag.outputs.TAG_NAME }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Extract tag name
         id: extract_tag
-        run: echo "{TAG_NAME}={${GITHUB_REF#refs/tags/}}" >> $GITHUB_OUTPUT
+        run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
 
       - name: Create Release
         id: create_release
