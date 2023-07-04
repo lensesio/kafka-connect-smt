@@ -64,6 +64,12 @@ jobs:
         id: extract_tag
         run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
 
+      - name: Update Maven version
+        run: mvn versions:set -DnewVersion=${{ steps.extract_tag.outputs.TAG_NAME }}
+
+      - name: Build Jar
+        run: mvn -B package --file pom.xml -DskipTests
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -81,6 +87,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/kafka-connect-smt/kafka-connect-smt/target/kafka-connect-smt-${{ steps.extract_tag.outputs.TAG_NAME }}.jar
+          asset_path: ./target/kafka-connect-smt-${{ steps.extract_tag.outputs.TAG_NAME }}.jar
           asset_name: kafka-connect-smt-${{ steps.extract_tag.outputs.TAG_NAME }}.jar
           asset_content_type: application/java-archive
