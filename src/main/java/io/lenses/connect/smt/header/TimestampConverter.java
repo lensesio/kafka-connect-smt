@@ -11,6 +11,7 @@
 
 package io.lenses.connect.smt.header;
 
+import static io.lenses.connect.smt.header.Utils.isBlank;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStructOrNull;
 
@@ -31,7 +32,6 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.common.utils.Utils;
 import org.apache.kafka.connect.connector.ConnectRecord;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Schema;
@@ -411,7 +411,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
     final String unixPrecision = simpleConfig.getString(UNIX_PRECISION_CONFIG);
 
-    if (type.equals(TYPE_STRING) && Utils.isBlank(toFormatPattern)) {
+    if (type.equals(TYPE_STRING) && isBlank(toFormatPattern)) {
       throw new ConfigException(
           "TimestampConverter requires format option to be specified "
               + "when using string timestamps");
@@ -646,4 +646,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   private SchemaAndValue convertTimestamp(Object timestamp) {
     return convertTimestamp(timestamp, null);
   }
+
+
 }
