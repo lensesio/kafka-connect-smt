@@ -23,7 +23,7 @@ class Utils {
       return null;
     }
     DateTimeFormatter format = null;
-    if (!org.apache.kafka.common.utils.Utils.isBlank(formatPattern)) {
+    if (!isBlank(formatPattern)) {
       try {
         format = DateTimeFormatter.ofPattern(formatPattern).withZone(UTC.toZoneId());
       } catch (IllegalArgumentException e) {
