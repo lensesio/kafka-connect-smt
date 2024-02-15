@@ -262,6 +262,22 @@ public class TimestampConverterTest {
   }
 
   @Test
+  public void testSchemalessUnixAsStringToTimestamp() {
+    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+    transformer.configure(config);
+    String datePlusTimeUnixString = String.valueOf(DATE_PLUS_TIME_UNIX);
+    SourceRecord transformed = transformer.apply(createRecordSchemaless(datePlusTimeUnixString));
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    assertEquals(DATE_PLUS_TIME.getTime(), header.value());
+  }
+
+  @Test
   public void testSchemalessStringToTimestamp() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");

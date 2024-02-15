@@ -224,6 +224,16 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
         new TimestampTranslator() {
           @Override
           public Date toRaw(Config config, Object orig) {
+            if (orig instanceof String) {
+              // try to parse it as a long
+              try {
+                orig = Long.parseLong((String) orig);
+              } catch (NumberFormatException e) {
+                throw new DataException(
+                    "Expected Unix timestamp to be a string representation of an epoch LONG, but found "
+                        + orig);
+              }
+            }
             if (!(orig instanceof Long)) {
               throw new DataException(
                   "Expected Unix timestamp to be a Long, but found " + orig.getClass());
@@ -597,7 +607,13 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     } else if (timestamp instanceof Long) {
       return TYPE_UNIX;
     } else if (timestamp instanceof String) {
-      return TYPE_STRING;
+      // check if timestamp is Long and then return unix
+      try {
+        Long.parseLong((String) timestamp);
+        return TYPE_UNIX;
+      } catch (NumberFormatException e) {
+        return TYPE_STRING;
+      }
     }
     throw new DataException(
         "TimestampConverter does not support " + timestamp.getClass() + " objects as timestamps.");
