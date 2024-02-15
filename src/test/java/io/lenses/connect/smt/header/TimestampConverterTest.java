@@ -81,14 +81,14 @@ public class TimestampConverterTest {
   // Configuration
 
   @Test
-  public void testConfigNoTargetType() {
+  void testConfigNoTargetType() {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     assertThrows(
         ConfigException.class, () -> transformer.configure(Collections.<String, String>emptyMap()));
   }
 
   @Test
-  public void testConfigInvalidTargetType() {
+  void testConfigInvalidTargetType() {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     assertThrows(
         ConfigException.class,
@@ -98,7 +98,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testConfigInvalidUnixPrecision() {
+  void testConfigInvalidUnixPrecision() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "invalid");
@@ -107,7 +107,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testConfigValidUnixPrecision() {
+  void testConfigValidUnixPrecision() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
@@ -117,7 +117,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testConfigMissingFormat() {
+  void testConfigMissingFormat() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -126,7 +126,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testConfigInvalidFormat() {
+  void testConfigInvalidFormat() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.FORMAT_TO_CONFIG, "bad-format");
@@ -138,7 +138,7 @@ public class TimestampConverterTest {
   // Conversions without schemas (most flexible Timestamp -> other types)
 
   @Test
-  public void testSchemalessIdentity() {
+  void testSchemalessIdentity() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -154,7 +154,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessTimestampToDate() {
+  void testSchemalessTimestampToDate() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -170,7 +170,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessTimestampToTime() {
+  void testSchemalessTimestampToTime() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Time");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -186,7 +186,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessTimestampToUnix() {
+  void testSchemalessTimestampToUnix() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -202,7 +202,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessTimestampToString() {
+  void testSchemalessTimestampToString() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
@@ -220,7 +220,7 @@ public class TimestampConverterTest {
   // Conversions without schemas (core types -> most flexible Timestamp format)
 
   @Test
-  public void testSchemalessDateToTimestamp() {
+  void testSchemalessDateToTimestamp() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -236,7 +236,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessTimeToTimestamp() {
+  void testSchemalessTimeToTimestamp() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -252,7 +252,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessUnixToTimestamp() {
+  void testSchemalessUnixToTimestamp() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -284,7 +284,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessStringToTimestamp() {
+  void testSchemalessStringToTimestamp() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
@@ -302,7 +302,7 @@ public class TimestampConverterTest {
   // Conversions with schemas (most flexible Timestamp -> other types)
 
   @Test
-  public void testWithSchemaIdentity() {
+  void testWithSchemaIdentity() {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
@@ -318,7 +318,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaTimestampToDate() {
+  void testWithSchemaTimestampToDate() {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
@@ -334,7 +334,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaTimestampToTime() {
+  void testWithSchemaTimestampToTime() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Time");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "tm_header");
@@ -351,7 +351,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaTimestampToUnix() {
+  void testWithSchemaTimestampToUnix() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "unix_header");
@@ -368,7 +368,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaTimestampToString() {
+  void testWithSchemaTimestampToString() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.FORMAT_TO_CONFIG, STRING_DATE_FMT);
@@ -387,31 +387,31 @@ public class TimestampConverterTest {
   // Null-value conversions schemaless
 
   @Test
-  public void testSchemalessNullValueToString() {
+  void testSchemalessNullValueToString() {
     testSchemalessNullValueConversion("string");
     testSchemalessNullFieldConversion("string");
   }
 
   @Test
-  public void testSchemalessNullValueToDate() {
+  void testSchemalessNullValueToDate() {
     testSchemalessNullValueConversion("Date");
     testSchemalessNullFieldConversion("Date");
   }
 
   @Test
-  public void testSchemalessNullValueToTimestamp() {
+  void testSchemalessNullValueToTimestamp() {
     testSchemalessNullValueConversion("Timestamp");
     testSchemalessNullFieldConversion("Timestamp");
   }
 
   @Test
-  public void testSchemalessNullValueToUnix() {
+  void testSchemalessNullValueToUnix() {
     testSchemalessNullValueConversion("unix");
     testSchemalessNullFieldConversion("unix");
   }
 
   @Test
-  public void testSchemalessNullValueToTime() {
+  void testSchemalessNullValueToTime() {
     testSchemalessNullValueConversion("Time");
     testSchemalessNullFieldConversion("Time");
   }
@@ -450,7 +450,7 @@ public class TimestampConverterTest {
   // Conversions with schemas (core types -> most flexible Timestamp format)
 
   @Test
-  public void testWithSchemaDateToTimestamp() {
+  void testWithSchemaDateToTimestamp() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
@@ -467,7 +467,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaTimeToTimestamp() {
+  void testWithSchemaTimeToTimestamp() {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
@@ -483,7 +483,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaUnixToTimestamp() {
+  void testWithSchemaUnixToTimestamp() {
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
@@ -499,7 +499,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaStringToTimestamp() {
+  void testWithSchemaStringToTimestamp() {
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FORMAT_FROM_CONFIG, STRING_DATE_FMT);
@@ -518,7 +518,7 @@ public class TimestampConverterTest {
   // Null-value conversions with schema
 
   @Test
-  public void testWithSchemaNullValueToTimestamp() {
+  void testWithSchemaNullValueToTimestamp() {
     testWithSchemaNullValueConversion(
         "Timestamp", Schema.OPTIONAL_INT64_SCHEMA, TimestampConverter.OPTIONAL_TIMESTAMP_SCHEMA);
     testWithSchemaNullValueConversion(
@@ -538,7 +538,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullFieldToTimestamp() {
+  void testWithSchemaNullFieldToTimestamp() {
     testWithSchemaNullFieldConversion(
         "Timestamp", Schema.OPTIONAL_INT64_SCHEMA, TimestampConverter.OPTIONAL_TIMESTAMP_SCHEMA);
     testWithSchemaNullFieldConversion(
@@ -558,7 +558,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullValueToUnix() {
+  void testWithSchemaNullValueToUnix() {
     testWithSchemaNullValueConversion(
         "unix", Schema.OPTIONAL_INT64_SCHEMA, Schema.OPTIONAL_INT64_SCHEMA);
     testWithSchemaNullValueConversion(
@@ -572,7 +572,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullFieldToUnix() {
+  void testWithSchemaNullFieldToUnix() {
     testWithSchemaNullFieldConversion(
         "unix", Schema.OPTIONAL_INT64_SCHEMA, Schema.OPTIONAL_INT64_SCHEMA);
     testWithSchemaNullFieldConversion(
@@ -586,7 +586,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullValueToTime() {
+  void testWithSchemaNullValueToTime() {
     testWithSchemaNullValueConversion(
         "Time", Schema.OPTIONAL_INT64_SCHEMA, TimestampConverter.OPTIONAL_TIME_SCHEMA);
     testWithSchemaNullValueConversion(
@@ -602,7 +602,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullFieldToTime() {
+  void testWithSchemaNullFieldToTime() {
     testWithSchemaNullFieldConversion(
         "Time", Schema.OPTIONAL_INT64_SCHEMA, TimestampConverter.OPTIONAL_TIME_SCHEMA);
     testWithSchemaNullFieldConversion(
@@ -618,7 +618,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullValueToDate() {
+  void testWithSchemaNullValueToDate() {
     testWithSchemaNullValueConversion(
         "Date", Schema.OPTIONAL_INT64_SCHEMA, TimestampConverter.OPTIONAL_DATE_SCHEMA);
     testWithSchemaNullValueConversion(
@@ -634,7 +634,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullFieldToDate() {
+  void testWithSchemaNullFieldToDate() {
     testWithSchemaNullFieldConversion(
         "Date", Schema.OPTIONAL_INT64_SCHEMA, TimestampConverter.OPTIONAL_DATE_SCHEMA);
     testWithSchemaNullFieldConversion(
@@ -650,7 +650,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullValueToString() {
+  void testWithSchemaNullValueToString() {
     testWithSchemaNullValueConversion(
         "string", Schema.OPTIONAL_INT64_SCHEMA, Schema.OPTIONAL_STRING_SCHEMA);
     testWithSchemaNullValueConversion(
@@ -664,7 +664,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNullFieldToString() {
+  void testWithSchemaNullFieldToString() {
     testWithSchemaNullFieldConversion(
         "string", Schema.OPTIONAL_INT64_SCHEMA, Schema.OPTIONAL_STRING_SCHEMA);
     testWithSchemaNullFieldConversion(
@@ -730,7 +730,7 @@ public class TimestampConverterTest {
   // Convert field instead of entire key/value
 
   @Test
-  public void testSchemalessFieldConversion() {
+  void testSchemalessFieldConversion() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
@@ -748,7 +748,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaFieldConversion() {
+  void testWithSchemaFieldConversion() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
@@ -776,7 +776,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaFieldConversion_Micros() {
+  void testWithSchemaFieldConversion_Micros() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
@@ -801,7 +801,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaFieldConversion_Nanos() {
+  void testWithSchemaFieldConversion_Nanos() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
@@ -826,7 +826,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaFieldConversion_Seconds() {
+  void testWithSchemaFieldConversion_Seconds() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "ts");
@@ -855,7 +855,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaValuePrefixedFieldConversion_Seconds() {
+  void testWithSchemaValuePrefixedFieldConversion_Seconds() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_value.ts");
@@ -884,7 +884,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaKeyPrefixedFieldConversion_Seconds() {
+  void testWithSchemaKeyPrefixedFieldConversion_Seconds() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.ts");
@@ -915,7 +915,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedFieldConversion_Seconds() {
+  void testWithSchemaNestedFieldConversion_Seconds() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "level1.ts");
@@ -948,7 +948,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedKeyFieldConversion_Seconds() {
+  void testWithSchemaNestedKeyFieldConversion_Seconds() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
@@ -983,7 +983,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessStringToUnix_Micros() {
+  void testSchemalessStringToUnix_Micros() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "microseconds");
@@ -1000,7 +1000,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessStringToUnix_Nanos() {
+  void testSchemalessStringToUnix_Nanos() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "nanoseconds");
@@ -1017,7 +1017,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessStringToUnix_Seconds() {
+  void testSchemalessStringToUnix_Seconds() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
@@ -1036,7 +1036,7 @@ public class TimestampConverterTest {
   // Validate Key implementation in addition to Value
 
   @Test
-  public void testKey() {
+  void testKey() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key");
@@ -1054,7 +1054,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedKeyFieldConversion15SecondsWindow() {
+  void testWithSchemaNestedKeyFieldConversion15SecondsWindow() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
@@ -1092,7 +1092,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedKeyFieldConversion2HoursTimestampWindow() {
+  void testWithSchemaNestedKeyFieldConversion2HoursTimestampWindow() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
@@ -1130,7 +1130,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedKeyFieldConversion2HoursStringWindow() {
+  void testWithSchemaNestedKeyFieldConversion2HoursStringWindow() {
 
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
@@ -1172,7 +1172,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedKeyFieldConversion2HoursStringWindowWhenSourceIsString() {
+  void testWithSchemaNestedKeyFieldConversion2HoursStringWindowWhenSourceIsString() {
 
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
@@ -1214,7 +1214,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testWithSchemaNestedKeyFieldConversion10MinutesWindow() {
+  void testWithSchemaNestedKeyFieldConversion10MinutesWindow() {
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.FIELD_CONFIG, "_key.level1.ts");
