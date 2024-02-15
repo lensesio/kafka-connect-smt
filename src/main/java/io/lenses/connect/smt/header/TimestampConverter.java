@@ -8,7 +8,6 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
-
 package io.lenses.connect.smt.header;
 
 import static io.lenses.connect.smt.header.Utils.isBlank;
@@ -662,6 +661,4 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   private SchemaAndValue convertTimestamp(Object timestamp) {
     return convertTimestamp(timestamp, null);
   }
-
-
 }

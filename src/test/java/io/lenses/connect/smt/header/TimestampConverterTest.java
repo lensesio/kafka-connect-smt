@@ -8,7 +8,6 @@
  * BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  * for the specific language governing permissions and limitations under the License.
  */
-
 package io.lenses.connect.smt.header;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -119,10 +118,10 @@ public class TimestampConverterTest {
 
   @Test
   public void testConfigMissingFormat() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "string");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     assertThrows(ConfigException.class, () -> transformer.configure(config));
   }
 
@@ -140,10 +139,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessIdentity() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -155,10 +155,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessTimestampToDate() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Date");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -170,10 +171,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessTimestampToTime() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Time");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -185,10 +187,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessTimestampToUnix() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
@@ -218,10 +221,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessDateToTimestamp() {
-    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE.getTime()));
 
@@ -233,10 +237,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessTimeToTimestamp() {
-    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(TIME.getTime()));
 
@@ -248,10 +253,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testSchemalessUnixToTimestamp() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME_UNIX));
 
@@ -262,7 +268,7 @@ public class TimestampConverterTest {
   }
 
   @Test
-  public void testSchemalessUnixAsStringToTimestamp() {
+  void testSchemalessUnixAsStringToTimestamp() {
     TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
@@ -329,10 +335,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testWithSchemaTimestampToTime() {
-    TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Time");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "tm_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Timestamp.SCHEMA, DATE_PLUS_TIME.getTime()));
@@ -345,10 +352,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testWithSchemaTimestampToUnix() {
-    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "unix");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "unix_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Timestamp.SCHEMA, DATE_PLUS_TIME.getTime()));
@@ -443,10 +451,11 @@ public class TimestampConverterTest {
 
   @Test
   public void testWithSchemaDateToTimestamp() {
-    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     final Map<String, String> config = new HashMap<>();
     config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
     config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
     SourceRecord transformed =
         transformer.apply(createRecordWithSchema(Date.SCHEMA, DATE.getTime()));
