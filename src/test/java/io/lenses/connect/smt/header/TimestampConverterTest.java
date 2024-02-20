@@ -15,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -75,6 +77,7 @@ public class TimestampConverterTest {
     DATE_PLUS_TIME_UNIX_NANOS = DATE_PLUS_TIME_UNIX_MICROS * 1000 + 456;
     // 86401 seconds
     DATE_PLUS_TIME_UNIX_SECONDS = DATE_PLUS_TIME.getTimeInMillis() / 1000;
+
     DATE_PLUS_TIME_STRING = "1970 01 02 00 00 01 234 UTC";
   }
 
@@ -881,6 +884,66 @@ public class TimestampConverterTest {
     assertNotNull(header);
     assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
     assertEquals(expectedDate.getTime(), header.value());
+  }
+
+  @Test
+  void testWithRecordMetadataPrefixedFieldConversion_Seconds() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_timestamp");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+    // ts field is a unix timestamp with seconds precision
+    Schema structWithTimestampFieldSchema =
+        SchemaBuilder.struct().field("ts", Schema.INT64_SCHEMA).build();
+    Struct original = new Struct(structWithTimestampFieldSchema);
+    original.put("ts", DATE_PLUS_TIME_UNIX_SECONDS);
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+    transformer.configure(config);
+    final SourceRecord initial =
+        new SourceRecord(
+            null,
+            null,
+            "topic",
+            0,
+            null,
+            null,
+            structWithTimestampFieldSchema,
+            original,
+            DATE_PLUS_TIME_UNIX_SECONDS);
+    final SourceRecord transformed = transformer.apply(initial);
+
+    Calendar expectedDate = GregorianCalendar.getInstance(UTC);
+    expectedDate.setTimeInMillis(0L);
+    expectedDate.add(Calendar.DATE, 1);
+    expectedDate.add(Calendar.SECOND, 1);
+
+    Header header = transformed.headers().lastWithName("ts_header");
+    assertNotNull(header);
+    assertEquals(Timestamp.SCHEMA.type(), header.schema().type());
+    assertEquals(expectedDate.getTime(), header.value());
+  }
+
+  @Test
+  void testRaiseExceptionIfTimestampMetadataIsUsedWithAPath() {
+    Map<String, String> config = new HashMap<>();
+    config.put(TimestampConverter.TARGET_TYPE_CONFIG, "Timestamp");
+    config.put(TimestampConverter.FIELD_CONFIG, "_timestamp.incorrect.path");
+    config.put(TimestampConverter.UNIX_PRECISION_CONFIG, "seconds");
+    config.put(TimestampConverter.HEADER_NAME_CONFIG, "ts_header");
+
+    final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
+
+    try {
+      transformer.configure(config);
+      fail("Expected a ConfigException");
+    } catch (ConfigException e) {
+      assertTrue(
+          e.getMessage()
+              .contains(
+                  "When using the record timestamp field, the field path should only be '_timestamp'."));
+    }
   }
 
   @Test

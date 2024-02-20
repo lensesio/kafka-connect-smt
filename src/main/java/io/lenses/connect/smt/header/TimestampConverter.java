@@ -63,6 +63,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
   private static final String KEY_FIELD = "_key";
   private static final String VALUE_FIELD = "_value";
+  private static final String TIMESTAMP_FIELD = "_timestamp";
 
   public static final String UNIX_PRECISION_CONFIG = "unix.precision";
   private static final String UNIX_PRECISION_DEFAULT = "milliseconds";
@@ -194,7 +195,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
             try {
               final LocalDateTime localDateTime =
                   LocalDateTime.parse((String) orig, config.fromFormat);
-              localDateTime.atZone(ZoneOffset.UTC);
               return Date.from(localDateTime.atZone(ZoneOffset.UTC).toInstant());
             } catch (DateTimeParseException e) {
               throw new DataException(
@@ -344,6 +344,22 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
         new TimestampTranslator() {
           @Override
           public Date toRaw(Config config, Object orig) {
+            // long epoch to date
+            if (orig instanceof Long) {
+              // if precision is not specified, assume milliseconds
+              // otherwise convert to milliseconds
+              switch (config.unixPrecision) {
+                case UNIX_PRECISION_SECONDS:
+                  return new Date(TimeUnit.SECONDS.toMillis((Long) orig));
+                case UNIX_PRECISION_MICROS:
+                  return new Date(TimeUnit.MICROSECONDS.toMillis((Long) orig));
+                case UNIX_PRECISION_NANOS:
+                  return new Date(TimeUnit.NANOSECONDS.toMillis((Long) orig));
+                case UNIX_PRECISION_MILLIS:
+                default:
+                  return new Date((Long) orig);
+              }
+            }
             if (!(orig instanceof Date)) {
               throw new DataException(
                   "Expected Timestamp to be a java.util.Date, but found " + orig.getClass());
@@ -400,7 +416,13 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     Optional<RollingWindowDetails> rollingWindow;
   }
 
-  private boolean isKey;
+  private static enum FieldType {
+    KEY,
+    VALUE,
+    TIMESTAMP
+  }
+
+  private FieldType fieldType;
   private Config config;
 
   @Override
@@ -432,18 +454,26 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     String[] fields = fieldConfig.split("\\.");
     if (fields.length > 0) {
       if (fields[0].equalsIgnoreCase(KEY_FIELD)) {
-        isKey = true;
+        fieldType = FieldType.KEY;
         // drop the first element
         fields = Arrays.copyOfRange(fields, 1, fields.length);
+      } else if (fields[0].equalsIgnoreCase(TIMESTAMP_FIELD)) {
+        fieldType = FieldType.TIMESTAMP;
+        // if fields length is > 1, then it is an error since the timestamp is a primitive
+        if (fields.length > 1) {
+          throw new ConfigException(
+              "When using the record timestamp field, the field path should only be '_timestamp'.");
+        }
+        fields = new String[0];
       } else {
-        isKey = false;
+        fieldType = FieldType.VALUE;
         if (fields[0].equalsIgnoreCase(VALUE_FIELD)) {
           // drop the first element
           fields = Arrays.copyOfRange(fields, 1, fields.length);
         }
       }
     } else {
-      isKey = false;
+      fieldType = FieldType.VALUE;
     }
 
     // ignore NONE as a rolling window type
@@ -504,14 +534,21 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   public void close() {}
 
   private Schema operatingSchema(R record) {
-    if (isKey) {
+    if (fieldType == FieldType.TIMESTAMP) {
+      // A record timestamp is epoch time and corresponds to the Logical Type Timestamp
+      return Timestamp.SCHEMA;
+    }
+    if (fieldType == FieldType.KEY) {
       return record.keySchema();
     }
     return record.valueSchema();
   }
 
   private Object operatingValue(R record) {
-    if (isKey) {
+    if (fieldType == FieldType.TIMESTAMP) {
+      return record.timestamp();
+    }
+    if (fieldType == FieldType.KEY) {
       return record.key();
     }
     return record.value();

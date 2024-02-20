@@ -19,7 +19,7 @@ The SMT adds a few more features to the original:
 | Name                  | Description                                                                                                                                                                                                                                                                                                                          | Type   | Default      | Valid Values                                     |  
 |-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|--------------|--------------------------------------------------| 
 | `header.name`         | The name of the header to insert the timestamp into.                                                                                                                                                                                                                                                                                 | String |              |                                                  |
-| `field`               | The field path containing the timestamp, or empty if the entire value is a timestamp. Prefix the path with the literal string `_key` or `_value` to specify the record Key or Value is used as source. If not specified `_value` is implied.                                                                                         | String |              |                                                  |
+| `field`               | The field path containing the timestamp, or empty if the entire value is a timestamp. Prefix the path with the literal string `_key`, `_value` or `_timestamp`, to specify the record Key, Value or Timestamp is used as source. If not specified `_value` is implied.                                                               | String |              |                                                  |
 | `target.type`         | Sets the desired timestamp representation.                                                                                                                                                                                                                                                                                           | String |              | string,unix,date,time,timestamp                  |
 | `format.from.pattern` | Sets the format of the timestamp when the input is a string. The format requires a Java DateTimeFormatter-compatible pattern.                                                                                                                                                                                                        | String |              |                                                  |
 | `format.to.pattern`   | Sets the format of the timestamp when the output is a string. The format requires a Java DateTimeFormatter-compatible pattern.                                                                                                                                                                                                       | String |              |                                                  |
@@ -80,6 +80,17 @@ transforms=TimestampConverter
 transforms.TimestampConverter.type=io.lenses.connect.smt.header.TimestampConverter
 transforms.TimestampConverter.header.name=wallclock
 transforms.TimestampConverter.field=_key.ts
+transforms.TimestampConverter.target.type=unix
+transforms.TimestampConverter.unix.precision=milliseconds
+```
+
+Here is an example using the record timestamp field:
+
+```properties
+transforms=TimestampConverter
+transforms.TimestampConverter.type=io.lenses.connect.smt.header.TimestampConverter
+transforms.TimestampConverter.header.name=wallclock
+transforms.TimestampConverter.field=_timestamp
 transforms.TimestampConverter.target.type=unix
 transforms.TimestampConverter.unix.precision=milliseconds
 ```
