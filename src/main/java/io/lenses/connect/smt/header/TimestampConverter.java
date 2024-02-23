@@ -15,12 +15,15 @@ import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStructOrNull;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -61,6 +64,8 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   public static final String FORMAT_FROM_CONFIG = "format.from.pattern";
   public static final String FORMAT_TO_CONFIG = "format.to.pattern";
 
+  public static final String TARGET_TIMEZONE_CONFIG = "target.timezone";
+
   private static final String KEY_FIELD = "_key";
   private static final String VALUE_FIELD = "_value";
   private static final String TIMESTAMP_FIELD = "_timestamp";
@@ -82,6 +87,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   private static final String UNIX_PRECISION_SECONDS = "seconds";
 
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+  private static final ZoneId UTC_ZONE_ID = UTC.toZoneId();
 
   public static final Schema OPTIONAL_DATE_SCHEMA =
       org.apache.kafka.connect.data.Date.builder().optional().schema();
@@ -160,7 +166,13 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               null,
               ConfigDef.Importance.LOW,
               "The rolling window size. For example, if the rolling window is set to 'minutes' "
-                  + "size is set to 15.");
+                  + "size is set to 15.")
+          .define(
+              TARGET_TIMEZONE_CONFIG,
+              ConfigDef.Type.STRING,
+              "UTC",
+              ConfigDef.Importance.LOW,
+              "The timezone to use for the timestamp conversion.");
 
   private interface TimestampTranslator {
     /** Convert from the type-specific format to the universal java.util.Date format */
@@ -296,13 +308,13 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
           @Override
           public Date toType(Config config, Date orig) {
-            Calendar result = Calendar.getInstance(UTC);
-            result.setTime(orig);
-            result.set(Calendar.HOUR_OF_DAY, 0);
-            result.set(Calendar.MINUTE, 0);
-            result.set(Calendar.SECOND, 0);
-            result.set(Calendar.MILLISECOND, 0);
-            return result.getTime();
+            ZonedDateTime truncated =
+                ZonedDateTime.of(
+                    orig.toInstant().atZone(config.targetTimeZoneId).toLocalDate(),
+                    LocalTime.MIDNIGHT,
+                    UTC_ZONE_ID);
+
+            return Date.from(truncated.toInstant());
           }
         });
 
@@ -327,15 +339,10 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
           @Override
           public Date toType(Config config, Date orig) {
-            Calendar origCalendar = Calendar.getInstance(UTC);
-            origCalendar.setTime(orig);
-            Calendar result = Calendar.getInstance(UTC);
-            result.setTimeInMillis(0L);
-            result.set(Calendar.HOUR_OF_DAY, origCalendar.get(Calendar.HOUR_OF_DAY));
-            result.set(Calendar.MINUTE, origCalendar.get(Calendar.MINUTE));
-            result.set(Calendar.SECOND, origCalendar.get(Calendar.SECOND));
-            result.set(Calendar.MILLISECOND, origCalendar.get(Calendar.MILLISECOND));
-            return result.getTime();
+            ZonedDateTime zonedDateTime = orig.toInstant().atZone(config.targetTimeZoneId);
+            return Date.from(
+                ZonedDateTime.of(LocalDate.of(1970, 1, 1), zonedDateTime.toLocalTime(), UTC_ZONE_ID)
+                    .toInstant());
           }
         });
 
@@ -392,7 +399,8 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
         String toFormatPattern,
         String unixPrecision,
         String header,
-        Optional<RollingWindowDetails> rollingWindow) {
+        Optional<RollingWindowDetails> rollingWindow,
+        TimeZone targetTimeZone) {
       this.fields = fields;
       this.type = type;
       this.fromFormat = fromFormat;
@@ -402,6 +410,8 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
       this.unixPrecision = unixPrecision;
       this.header = header;
       this.rollingWindow = rollingWindow;
+      this.targetTimeZone = targetTimeZone;
+      this.targetTimeZoneId = targetTimeZone.toZoneId();
     }
 
     String[] fields;
@@ -414,6 +424,9 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     String unixPrecision;
 
     Optional<RollingWindowDetails> rollingWindow;
+
+    TimeZone targetTimeZone;
+    final ZoneId targetTimeZoneId;
   }
 
   private static enum FieldType {
@@ -442,14 +455,21 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
     final String unixPrecision = simpleConfig.getString(UNIX_PRECISION_CONFIG);
 
+    final String targetTimeZone = simpleConfig.getString(TARGET_TIMEZONE_CONFIG);
+    TimeZone timeZone = TimeZone.getTimeZone(targetTimeZone);
+    if (timeZone == null) {
+      throw new ConfigException("Invalid timezone: " + targetTimeZone);
+    }
+
     if (type.equals(TYPE_STRING) && isBlank(toFormatPattern)) {
       throw new ConfigException(
           "TimestampConverter requires format option to be specified "
               + "when using string timestamps");
     }
     DateTimeFormatter fromPattern =
-        io.lenses.connect.smt.header.Utils.getDateFormat(fromFormatPattern);
-    DateTimeFormatter toPattern = io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern);
+        io.lenses.connect.smt.header.Utils.getDateFormat(fromFormatPattern, UTC.toZoneId());
+    DateTimeFormatter toPattern =
+        io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern, timeZone.toZoneId());
 
     String[] fields = fieldConfig.split("\\.");
     if (fields.length > 0) {
@@ -494,6 +514,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
           "TimestampConverter requires a window size to be specified "
               + "when using rolling window timestamps.");
     }
+
     config =
         new Config(
             fields,
@@ -504,7 +525,8 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
             toFormatPattern,
             unixPrecision,
             header,
-            rollingWindowDetails);
+            rollingWindowDetails,
+            timeZone);
   }
 
   @Override

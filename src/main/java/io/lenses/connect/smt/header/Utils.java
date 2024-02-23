@@ -10,6 +10,7 @@
  */
 package io.lenses.connect.smt.header;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 import org.apache.kafka.common.config.ConfigException;
@@ -17,14 +18,14 @@ import org.apache.kafka.common.config.ConfigException;
 class Utils {
   private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
-  static DateTimeFormatter getDateFormat(String formatPattern) {
+  static DateTimeFormatter getDateFormat(String formatPattern, ZoneId zoneId) {
     if (formatPattern == null) {
       return null;
     }
     DateTimeFormatter format = null;
     if (!isBlank(formatPattern)) {
       try {
-        format = DateTimeFormatter.ofPattern(formatPattern).withZone(UTC.toZoneId());
+        format = DateTimeFormatter.ofPattern(formatPattern).withZone(zoneId);
       } catch (IllegalArgumentException e) {
         throw new ConfigException(
             "TimestampConverter requires a DateTimeFormatter-compatible pattern "

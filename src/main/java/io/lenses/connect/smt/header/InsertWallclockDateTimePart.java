@@ -11,11 +11,12 @@
 package io.lenses.connect.smt.header;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.kafka.common.config.ConfigDef;
@@ -38,7 +39,9 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
   // Used for testing only to inject the instant value
   private Supplier<Instant> instantF = Instant::now;
 
-  private Function<Instant, String> valueExtractorF;
+  private ZoneId timeZone = ZoneId.of("UTC");
+
+  private Function<ZonedDateTime, String> valueExtractorF;
 
   void setInstantF(Supplier<Instant> instantF) {
     this.instantF = instantF;
@@ -59,11 +62,19 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
                   + Arrays.stream(DateTimePart.values())
                       .map(Enum::name)
                       .reduce((a, b) -> a + ", " + b)
-                      .orElse(""));
+                      .orElse(""))
+          .define(
+              ConfigName.TIMEZONE,
+              ConfigDef.Type.STRING,
+              "UTC",
+              ConfigDef.Importance.HIGH,
+              "The timezone to use.");
 
   interface ConfigName {
     String HEADER_NAME = "header.name";
     String DATE_TIME_PART = "date.time.part";
+
+    String TIMEZONE = "timezone";
   }
 
   enum DateTimePart {
@@ -81,7 +92,9 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
       return null;
     }
 
-    final String value = valueExtractorF.apply(instantF.get());
+    Instant now = instantF.get();
+    final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, timeZone);
+    final String value = valueExtractorF.apply(zonedDateTime);
     r.headers().addString(headerName, value);
     return r;
   }
@@ -97,6 +110,13 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
   @Override
   public void configure(Map<String, ?> props) {
     final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
+    final String timeZoneStr = config.getString(ConfigName.TIMEZONE);
+    try {
+      timeZone = TimeZone.getTimeZone(timeZoneStr).toZoneId();
+    } catch (IllegalArgumentException e) {
+      throw new ConfigException(
+          "Configuration '" + ConfigName.TIMEZONE + "' is not a valid timezone.");
+    }
     headerName = config.getString(ConfigName.HEADER_NAME);
     DateTimePart dateTimePart;
     try {
@@ -140,31 +160,27 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
     }
   }
 
-  private static OffsetDateTime getDateTime(Instant instant) {
-    return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
+  private static String getYear(ZonedDateTime time) {
+    return String.valueOf(time.getYear());
   }
 
-  private static String getYear(Instant instant) {
-    return String.valueOf(getDateTime(instant).getYear());
+  private static String getMonth(ZonedDateTime time) {
+    return String.valueOf(time.getMonthValue());
   }
 
-  private static String getMonth(Instant instant) {
-    return String.valueOf(getDateTime(instant).getMonthValue());
+  private static String getDay(ZonedDateTime time) {
+    return String.valueOf(time.getDayOfMonth());
   }
 
-  private static String getDay(Instant instant) {
-    return String.valueOf(getDateTime(instant).getDayOfMonth());
+  private static String getHour(ZonedDateTime time) {
+    return String.valueOf(time.getHour());
   }
 
-  private static String getHour(Instant instant) {
-    return String.valueOf(getDateTime(instant).getHour());
+  private static String getMinute(ZonedDateTime time) {
+    return String.valueOf(time.getMinute());
   }
 
-  private static String getMinute(Instant instant) {
-    return String.valueOf(getDateTime(instant).getMinute());
-  }
-
-  private static String getSecond(Instant instant) {
-    return String.valueOf(getDateTime(instant).getSecond());
+  private static String getSecond(ZonedDateTime time) {
+    return String.valueOf(time.getSecond());
   }
 }

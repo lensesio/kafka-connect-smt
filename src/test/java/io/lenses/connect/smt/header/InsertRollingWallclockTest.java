@@ -11,6 +11,7 @@
 package io.lenses.connect.smt.header;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.header.ConnectHeaders;
 import org.apache.kafka.connect.header.Headers;
@@ -102,6 +104,55 @@ public class InsertRollingWallclockTest {
           final String actual = transformed.headers().lastWithName("wallclock").value().toString();
           final String expected = convertToEpochMillis(scenario.third, "yyyy-MM-dd HH:mm");
           assertEquals(actual, expected);
+        });
+  }
+
+  @Test
+  public void testRollingWindowEvery15MinutesAndTimezoneIsParis() {
+    ArrayList<Tuple3<String, Integer, String>> scenarios = new ArrayList<>();
+
+    scenarios.add(new Tuple3<>(("2020-01-01T01:00:00.999Z"), 15, "2020-01-01 02:00"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:00:01.000Z"), 15, "2020-01-01 02:00"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:14:59.000Z"), 15, "2020-01-01 02:00"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:15:00.000Z"), 15, "2020-01-01 02:15"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:15:01.000Z"), 15, "2020-01-01 02:15"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:29:59.000Z"), 15, "2020-01-01 02:15"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:30:00.000Z"), 15, "2020-01-01 02:30"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:30:01.000Z"), 15, "2020-01-01 02:30"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:44:59.000Z"), 15, "2020-01-01 02:30"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:45:00.000Z"), 15, "2020-01-01 02:45"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:45:01.000Z"), 15, "2020-01-01 02:45"));
+    scenarios.add(new Tuple3<>(("2020-01-01T01:59:59.000Z"), 15, "2020-01-01 02:45"));
+
+    scenarios.forEach(
+        scenario -> {
+          Map<String, String> configs = new HashMap<>();
+          configs.put("header.name", "wallclock");
+          configs.put("value.type", "format");
+          configs.put("format", "yyyy-MM-dd HH:mm");
+          configs.put("window.size", scenario.second.toString());
+          configs.put("window.type", "minutes");
+          configs.put("timezone", "Europe/Paris");
+          final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
+          transformer.configure(configs);
+          transformer.setInstantF(() -> Instant.parse(scenario.first));
+
+          final Headers headers = new ConnectHeaders();
+          final SourceRecord record =
+              new SourceRecord(
+                  null,
+                  null,
+                  "topic",
+                  0,
+                  Schema.STRING_SCHEMA,
+                  "key",
+                  Schema.STRING_SCHEMA,
+                  "value",
+                  Instant.parse(scenario.first).toEpochMilli(),
+                  headers);
+          final SourceRecord transformed = transformer.apply(record);
+          final String actual = transformed.headers().lastWithName("wallclock").value().toString();
+          assertEquals(actual, scenario.third);
         });
   }
 
@@ -443,6 +494,27 @@ public class InsertRollingWallclockTest {
           final String expected = convertToEpochMillis(scenario.third, "yyyy-MM-dd HH:mm:ss");
           assertEquals(actual, expected);
         });
+  }
+
+  @Test
+  public void testRaiseExceptionWhenTimezoneIsNotUTCAndFormatIsEpoch() {
+    Map<String, String> configs = new HashMap<>();
+    configs.put("header.name", "wallclock");
+    configs.put("value.type", "epoch");
+    configs.put("format", "yyyy-MM-dd HH:mm");
+    configs.put("rolling.window.size", "15");
+    configs.put("rolling.window.type", "minutes");
+    configs.put("timezone", "Europe/Paris");
+    final InsertRollingWallclock<SourceRecord> transformer = new InsertRollingWallclock<>();
+    try {
+      transformer.configure(configs);
+    } catch (ConfigException e) {
+      assertEquals(
+          "Configuration 'timezone' is not allowed to be set to a value other than UTC when 'value.type' is set to 'epoch'.",
+          e.getMessage());
+    } catch (Exception e) {
+      fail("Expected ConfigException but got " + e.getClass().getName());
+    }
   }
 
   private static String convertToEpochMillis(String date, String pattern) {

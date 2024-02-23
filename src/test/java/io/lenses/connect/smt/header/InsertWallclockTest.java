@@ -59,6 +59,23 @@ public class InsertWallclockTest {
   }
 
   @Test
+  public void testRaiseConfigExceptionIfTimezoneIsNotUTCAndEpochModeIsSet() {
+    Map<String, String> configs = new HashMap<>();
+    configs.put("header.name", "wallclock");
+    configs.put("value.type", "epoch");
+    configs.put("timezone", "Europe/Paris");
+    InsertWallclock<SourceRecord> transformer = new InsertWallclock<>();
+    try {
+      transformer.configure(configs);
+      fail("It should have raised a ConfigException");
+    } catch (Exception e) {
+      assertEquals(
+          e.getMessage(),
+          "Configuration 'timezone' must be set to 'UTC' when 'value.type' is set to 'epoch'.");
+    }
+  }
+
+  @Test
   public void testApplyWithStringValue() {
     Map<String, String> configs = new HashMap<>();
     configs.put("header.name", "wallclock");
@@ -128,6 +145,43 @@ public class InsertWallclockTest {
     assertEquals(1, transformedHeaders.size());
     assertEquals(transformedHeaders.iterator().next().key(), "wallclock");
     assertEquals(transformedHeaders.iterator().next().value(), "2020-01-01 00:00:00");
+  }
+
+  @Test
+  public void testApplyWithStringValueAndCustomFormatterAndTimezoneIsKolkata() {
+    Map<String, String> configs = new HashMap<>();
+    configs.put("header.name", "wallclock");
+    configs.put("value.type", "format");
+    configs.put("format", "yyyy-MM-dd HH:mm:ss");
+    configs.put("timezone", "Asia/Kolkata");
+    InsertWallclock<SourceRecord> transformer = new InsertWallclock<>();
+    transformer.configure(configs);
+    final Instant instant = Instant.parse("2020-01-01T00:00:00.000Z");
+    transformer.setInstantF(() -> instant);
+
+    // Create a source record
+    Headers headers = new ConnectHeaders();
+    SourceRecord record =
+        new SourceRecord(
+            null,
+            null,
+            "topic",
+            0,
+            Schema.STRING_SCHEMA,
+            "value",
+            null,
+            null,
+            System.currentTimeMillis(),
+            headers);
+
+    // Apply the transformation
+    SourceRecord transformedRecord = transformer.apply(record);
+
+    // Verify the header is inserted
+    Headers transformedHeaders = transformedRecord.headers();
+    assertEquals(1, transformedHeaders.size());
+    assertEquals(transformedHeaders.iterator().next().key(), "wallclock");
+    assertEquals(transformedHeaders.iterator().next().value(), "2020-01-01 05:30:00");
   }
 
   @Test
