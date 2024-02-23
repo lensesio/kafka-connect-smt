@@ -12,11 +12,9 @@ package io.lenses.connect.smt.header;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 import org.apache.kafka.common.config.ConfigException;
 
 class Utils {
-  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   static DateTimeFormatter getDateFormat(String formatPattern, ZoneId zoneId) {
     if (formatPattern == null) {

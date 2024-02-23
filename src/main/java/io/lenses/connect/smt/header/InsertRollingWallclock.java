@@ -46,7 +46,6 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
   private static final int DEFAULT_ROLLING_WINDOW_VALUE = 15;
   private static final RollingWindow DEFAULT_ROLLING_WINDOW = RollingWindow.MINUTES;
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-  private ZoneId timezone = Constants.UTC;
 
   private interface ConfigName {
     String HEADER_NAME_CONFIG = "header.name";
@@ -156,15 +155,10 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
               + "' must be set to either 'epoch' or 'format'.");
     }
     final String timezoneStr = config.getString(ConfigName.TIMEZONE_CONFIG);
-    try {
-      this.timezone = TimeZone.getTimeZone(timezoneStr).toZoneId();
-    } catch (Exception e) {
-      throw new ConfigException(
-          "Configuration '"
-              + ConfigName.TIMEZONE_CONFIG
-              + "' is not a valid timezone. It can be any valid java timezone.");
-    }
-    if (!this.timezone.getId().equals(Constants.UTC.getId())
+    // getTimeZone docs: the specified TimeZone, or the GMT zone if the given ID cannot be
+    // understood.
+    ZoneId zoneId = TimeZone.getTimeZone(timezoneStr).toZoneId();
+    if (!zoneId.getId().equals(Constants.UTC_ZONE_ID.getId())
         && valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_EPOCH)) {
       throw new ConfigException(
           "Configuration '"
@@ -186,7 +180,7 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
         }
       }
       valueExtractorF = this::getFormattedValue;
-      format = format.withZone(timezone);
+      format = format.withZone(zoneId);
     } else {
       valueExtractorF = this::getEpochValue;
     }

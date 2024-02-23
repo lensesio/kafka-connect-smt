@@ -32,7 +32,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("header.name", "wallclock");
     configs.put("date.time.part", "year");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-01T00:00:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-01T00:00:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -58,7 +58,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("header.name", "wallclock");
     configs.put("date.time.part", "month");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-01T00:00:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-01T00:00:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -84,7 +84,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("header.name", "wallclock");
     configs.put("date.time.part", "day");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-13T00:00:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-13T00:00:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -110,7 +110,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("header.name", "wallclock");
     configs.put("date.time.part", "hour");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-01T13:00:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-01T13:00:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -137,7 +137,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("date.time.part", "hour");
     configs.put("timezone", "Asia/Kolkata");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-01T13:00:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-01T13:00:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -164,7 +164,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("date.time.part", "year");
     configs.put("timezone", "Asia/Kolkata");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-12-31T23:00:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-12-31T23:00:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -190,7 +190,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("header.name", "wallclock");
     configs.put("date.time.part", "minute");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-01T00:13:00.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-01T00:13:00.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =
@@ -216,7 +216,7 @@ public class InsertWallclockDateTimePartTest {
     configs.put("header.name", "wallclock");
     configs.put("date.time.part", "second");
     transformer.configure(configs);
-    transformer.setInstantF(() -> Instant.parse("2020-01-01T00:00:13.000Z"));
+    transformer.setInstantSupplier(() -> Instant.parse("2020-01-01T00:00:13.000Z"));
 
     final Headers headers = new ConnectHeaders();
     final SourceRecord record =

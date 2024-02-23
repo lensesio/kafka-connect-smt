@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 
 /** Test for {@link TimestampConverter}. */
 public class TimestampConverterTest {
-  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+  private static final TimeZone UTC = Constants.UTC;
   private static final Calendar EPOCH;
   private static final Calendar TIME;
   private static final Calendar DATE;
@@ -225,7 +225,7 @@ public class TimestampConverterTest {
     assertNotNull(header);
     assertEquals(Time.SCHEMA.type(), header.schema().type());
 
-    Calendar expected = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    Calendar expected = Calendar.getInstance(Constants.UTC);
     expected.setTimeInMillis(0L);
     expected.add(Calendar.HOUR, 18);
     expected.add(Calendar.MILLISECOND, 1234);

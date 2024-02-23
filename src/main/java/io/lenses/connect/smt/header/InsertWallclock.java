@@ -60,7 +60,6 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
 
   private Supplier<Instant> instantF = Instant::now;
 
-  private TimeZone timeZone = TimeZone.getTimeZone("UTC");
   private static final DateTimeFormatter DEFAULT_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   /**
@@ -166,12 +165,8 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
               + "' must be set to either 'epoch' or 'format'.");
     }
     final String timezoneStr = config.getString(ConfigName.TIMEZONE);
-    try {
-      timeZone = TimeZone.getTimeZone(timezoneStr);
-    } catch (IllegalArgumentException e) {
-      throw new ConfigException(
-          "Configuration '" + ConfigName.TIMEZONE + "' is not a valid timezone.");
-    }
+    TimeZone timeZone = TimeZone.getTimeZone(timezoneStr);
+
     if (valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_FORMAT)) {
       final String pattern = config.getString(ConfigName.FORMAT);
       if (pattern == null) {
@@ -187,7 +182,7 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
       format = format.withZone(timeZone.toZoneId());
       valueExtractorF = this::getFormattedValue;
     } else {
-      if (!timeZone.getID().equals(Constants.UTC.getId())) {
+      if (!timeZone.getID().equals(Constants.UTC_ZONE_ID.getId())) {
         throw new ConfigException(
             "Configuration '"
                 + ConfigName.TIMEZONE

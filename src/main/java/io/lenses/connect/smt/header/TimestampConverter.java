@@ -86,9 +86,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   private static final String UNIX_PRECISION_NANOS = "nanoseconds";
   private static final String UNIX_PRECISION_SECONDS = "seconds";
 
-  private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-  private static final ZoneId UTC_ZONE_ID = UTC.toZoneId();
-
   public static final Schema OPTIONAL_DATE_SCHEMA =
       org.apache.kafka.connect.data.Date.builder().optional().schema();
   public static final Schema OPTIONAL_TIMESTAMP_SCHEMA = Timestamp.builder().optional().schema();
@@ -312,7 +309,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
                 ZonedDateTime.of(
                     orig.toInstant().atZone(config.targetTimeZoneId).toLocalDate(),
                     LocalTime.MIDNIGHT,
-                    UTC_ZONE_ID);
+                    Constants.UTC_ZONE_ID);
 
             return Date.from(truncated.toInstant());
           }
@@ -341,7 +338,10 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
           public Date toType(Config config, Date orig) {
             ZonedDateTime zonedDateTime = orig.toInstant().atZone(config.targetTimeZoneId);
             return Date.from(
-                ZonedDateTime.of(LocalDate.of(1970, 1, 1), zonedDateTime.toLocalTime(), UTC_ZONE_ID)
+                ZonedDateTime.of(
+                        LocalDate.of(1970, 1, 1),
+                        zonedDateTime.toLocalTime(),
+                        Constants.UTC_ZONE_ID)
                     .toInstant());
           }
         });
@@ -457,17 +457,14 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
     final String targetTimeZone = simpleConfig.getString(TARGET_TIMEZONE_CONFIG);
     TimeZone timeZone = TimeZone.getTimeZone(targetTimeZone);
-    if (timeZone == null) {
-      throw new ConfigException("Invalid timezone: " + targetTimeZone);
-    }
-
     if (type.equals(TYPE_STRING) && isBlank(toFormatPattern)) {
       throw new ConfigException(
           "TimestampConverter requires format option to be specified "
               + "when using string timestamps");
     }
     DateTimeFormatter fromPattern =
-        io.lenses.connect.smt.header.Utils.getDateFormat(fromFormatPattern, UTC.toZoneId());
+        io.lenses.connect.smt.header.Utils.getDateFormat(
+            fromFormatPattern, Constants.UTC.toZoneId());
     DateTimeFormatter toPattern =
         io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern, timeZone.toZoneId());
 
