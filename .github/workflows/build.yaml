@@ -1,9 +1,9 @@
 name: CI/CD
 
 on:
-  push:
-    branches:
-      - *
+    push:
+        branches:
+        - "*"
 
 jobs:
   build:
