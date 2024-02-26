@@ -181,7 +181,6 @@ public class TimestampConverterTest {
 
     final TimestampConverter<SourceRecord> transformer = new TimestampConverter<>();
     transformer.configure(config);
-    System.out.println("DATE_PLUS_TIME: " + DATE_PLUS_TIME.getTime());
     SourceRecord transformed = transformer.apply(createRecordSchemaless(DATE_PLUS_TIME.getTime()));
 
     Header header = transformed.headers().lastWithName("ts_header");
