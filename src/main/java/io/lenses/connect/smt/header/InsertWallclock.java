@@ -16,6 +16,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -45,6 +46,7 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
  * "transforms.insertWallclockHeader.header.name": "wallclock",
  * "transforms.insertWallclockHeader.value.type": "format",
  * "transforms.insertWallclockHeader.format": "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
+ * "transforms.insertWallclockHeader.timezone": "Europe/Paris"
  *
  * }</pre>
  *
@@ -76,6 +78,8 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
     String VALUE_TYPE_EPOCH = "epoch";
     String VALUE_TYPE_FORMAT = "format";
     String FORMAT = "format";
+
+    String TIMEZONE = "timezone";
   }
 
   public static final ConfigDef CONFIG_DEF =
@@ -113,7 +117,13 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
               null,
               ConfigDef.Importance.MEDIUM,
               "Sets the format of the header value inserted if the type was set to string. "
-                  + "It can be any valid java date format.");
+                  + "It can be any valid java date format.")
+          .define(
+              ConfigName.TIMEZONE,
+              ConfigDef.Type.STRING,
+              "UTC",
+              ConfigDef.Importance.MEDIUM,
+              "Sets the timezone of the header value inserted if the type was set to string. ");
 
   @Override
   public R apply(R r) {
@@ -154,6 +164,9 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
               + ConfigName.VALUE_TYPE
               + "' must be set to either 'epoch' or 'format'.");
     }
+    final String timezoneStr = config.getString(ConfigName.TIMEZONE);
+    TimeZone timeZone = TimeZone.getTimeZone(timezoneStr);
+
     if (valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_FORMAT)) {
       final String pattern = config.getString(ConfigName.FORMAT);
       if (pattern == null) {
@@ -166,8 +179,15 @@ public class InsertWallclock<R extends ConnectRecord<R>> implements Transformati
               "Configuration '" + ConfigName.FORMAT + "' is not a valid date format.");
         }
       }
+      format = format.withZone(timeZone.toZoneId());
       valueExtractorF = this::getFormattedValue;
     } else {
+      if (!timeZone.getID().equals(Constants.UTC_ZONE_ID.getId())) {
+        throw new ConfigException(
+            "Configuration '"
+                + ConfigName.TIMEZONE
+                + "' must be set to 'UTC' when 'value.type' is set to 'epoch'.");
+      }
       valueExtractorF = this::getEpochValue;
     }
   }

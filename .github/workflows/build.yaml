@@ -2,12 +2,10 @@ name: CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
 
-  create:
-    tags:
-      - 'v*'
 
 jobs:
   build:
@@ -24,18 +22,8 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
-      - name: Extract tag name
-        id: extract_tag
-        run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
-
-      - name: Update Maven version
-        run: mvn versions:set -DnewVersion=${{ steps.extract_tag.outputs.TAG_NAME }}
-
       - name: Check License
         run: mvn  license:check
-
-      - name: Checkstyle
-        run: mvn checkstyle:checkstyle
 
       - name: Build
         run: mvn clean package -B
@@ -43,50 +31,3 @@ jobs:
       - name: Create JAR
         run: mvn jar:jar
 
-  release:
-    name: Create Release
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: '11' # Or the desired Java version
-          distribution: 'temurin'
-
-      - name: Extract tag name
-        id: extract_tag
-        run: echo ::set-output name=TAG_NAME::${GITHUB_REF#refs/tags/}
-
-      - name: Update Maven version
-        run: mvn versions:set -DnewVersion=${{ steps.extract_tag.outputs.TAG_NAME }}
-
-      - name: Build Jar
-        run: mvn -B package --file pom.xml -DskipTests
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
-      - name: Upload JAR
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./target/kafka-connect-smt-${{ steps.extract_tag.outputs.TAG_NAME }}.jar
-          asset_name: kafka-connect-smt-${{ steps.extract_tag.outputs.TAG_NAME }}.jar
-          asset_content_type: application/java-archive

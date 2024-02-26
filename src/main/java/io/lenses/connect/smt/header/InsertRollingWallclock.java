@@ -12,10 +12,12 @@ package io.lenses.connect.smt.header;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -56,6 +58,8 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
 
     String VALUE_TYPE_EPOCH = "epoch";
     String VALUE_TYPE_FORMAT = "format";
+
+    String TIMEZONE_CONFIG = "timezone";
   }
 
   public static final ConfigDef CONFIG_DEF =
@@ -90,7 +94,13 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
               ConfigDef.Importance.HIGH,
               "The rolling window size. For example, if the rolling window is set to 'minutes' "
                   + "and the rolling window value is set to 15, then the rolling window "
-                  + "is 15 minutes.");
+                  + "is 15 minutes.")
+          .define(
+              ConfigName.TIMEZONE_CONFIG,
+              ConfigDef.Type.STRING,
+              "UTC",
+              ConfigDef.Importance.HIGH,
+              "The timezone used when 'value.type' is set to format.");
 
   /**
    * Used to testing only to inject the instant value.
@@ -144,6 +154,19 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
               + ConfigName.VALUE_TYPE_CONFIG
               + "' must be set to either 'epoch' or 'format'.");
     }
+    final String timezoneStr = config.getString(ConfigName.TIMEZONE_CONFIG);
+    // getTimeZone docs: the specified TimeZone, or the GMT zone if the given ID cannot be
+    // understood.
+    ZoneId zoneId = TimeZone.getTimeZone(timezoneStr).toZoneId();
+    if (!zoneId.getId().equals(Constants.UTC_ZONE_ID.getId())
+        && valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_EPOCH)) {
+      throw new ConfigException(
+          "Configuration '"
+              + ConfigName.TIMEZONE_CONFIG
+              + "' is not allowed to be set to a value other than UTC when '"
+              + ConfigName.VALUE_TYPE_CONFIG
+              + "' is set to 'epoch'.");
+    }
     if (valueType.equalsIgnoreCase(ConfigName.VALUE_TYPE_FORMAT)) {
       final String pattern = config.getString(ConfigName.FORMAT_CONFIG);
       if (pattern == null) {
@@ -157,6 +180,7 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
         }
       }
       valueExtractorF = this::getFormattedValue;
+      format = format.withZone(zoneId);
     } else {
       valueExtractorF = this::getEpochValue;
     }
@@ -190,7 +214,8 @@ public class InsertRollingWallclock<R extends ConnectRecord<R>> implements Trans
   }
 
   private String getFormattedValue() {
-    Instant wallclock = rollingWindowDetails.adjust(instantF.get());
+    Instant now = instantF.get();
+    Instant wallclock = rollingWindowDetails.adjust(now);
 
     OffsetDateTime dateTime = OffsetDateTime.ofInstant(wallclock, ZoneOffset.UTC);
     return format.format(dateTime);

@@ -11,31 +11,9 @@
 package io.lenses.connect.smt.header;
 
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import org.apache.kafka.common.config.ConfigException;
+import java.util.TimeZone;
 
-class Utils {
-
-  static DateTimeFormatter getDateFormat(String formatPattern, ZoneId zoneId) {
-    if (formatPattern == null) {
-      return null;
-    }
-    DateTimeFormatter format = null;
-    if (!isBlank(formatPattern)) {
-      try {
-        format = DateTimeFormatter.ofPattern(formatPattern).withZone(zoneId);
-      } catch (IllegalArgumentException e) {
-        throw new ConfigException(
-            "TimestampConverter requires a DateTimeFormatter-compatible pattern "
-                + "for string timestamps: "
-                + formatPattern,
-            e);
-      }
-    }
-    return format;
-  }
-
-  public static boolean isBlank(String str) {
-    return str == null || str.trim().isEmpty();
-  }
+public class Constants {
+  public static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+  public static final ZoneId UTC_ZONE_ID = UTC.toZoneId();
 }

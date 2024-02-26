@@ -11,11 +11,12 @@
 package io.lenses.connect.smt.header;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.kafka.common.config.ConfigDef;
@@ -36,12 +37,14 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
   private String headerName;
 
   // Used for testing only to inject the instant value
-  private Supplier<Instant> instantF = Instant::now;
+  private Supplier<Instant> instantSupplier = Instant::now;
 
-  private Function<Instant, String> valueExtractorF;
+  private ZoneId timeZone = ZoneId.of("UTC");
 
-  void setInstantF(Supplier<Instant> instantF) {
-    this.instantF = instantF;
+  private Function<ZonedDateTime, String> datePartExtractor;
+
+  void setInstantSupplier(Supplier<Instant> instantSupplier) {
+    this.instantSupplier = instantSupplier;
   }
 
   public static ConfigDef CONFIG_DEF =
@@ -59,11 +62,19 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
                   + Arrays.stream(DateTimePart.values())
                       .map(Enum::name)
                       .reduce((a, b) -> a + ", " + b)
-                      .orElse(""));
+                      .orElse(""))
+          .define(
+              ConfigName.TIMEZONE,
+              ConfigDef.Type.STRING,
+              "UTC",
+              ConfigDef.Importance.HIGH,
+              "The timezone to use.");
 
   interface ConfigName {
     String HEADER_NAME = "header.name";
     String DATE_TIME_PART = "date.time.part";
+
+    String TIMEZONE = "timezone";
   }
 
   enum DateTimePart {
@@ -81,8 +92,10 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
       return null;
     }
 
-    final String value = valueExtractorF.apply(instantF.get());
-    r.headers().addString(headerName, value);
+    Instant now = instantSupplier.get();
+    final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, timeZone);
+    final String extractedDatePart = datePartExtractor.apply(zonedDateTime);
+    r.headers().addString(headerName, extractedDatePart);
     return r;
   }
 
@@ -97,6 +110,8 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
   @Override
   public void configure(Map<String, ?> props) {
     final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
+    final String timeZoneStr = config.getString(ConfigName.TIMEZONE);
+    timeZone = TimeZone.getTimeZone(timeZoneStr).toZoneId();
     headerName = config.getString(ConfigName.HEADER_NAME);
     DateTimePart dateTimePart;
     try {
@@ -118,53 +133,49 @@ public class InsertWallclockDateTimePart<R extends ConnectRecord<R>> implements 
     // initialize the value extractor
     switch (dateTimePart) {
       case YEAR:
-        valueExtractorF = InsertWallclockDateTimePart::getYear;
+        datePartExtractor = InsertWallclockDateTimePart::getYear;
         break;
       case MONTH:
-        valueExtractorF = InsertWallclockDateTimePart::getMonth;
+        datePartExtractor = InsertWallclockDateTimePart::getMonth;
         break;
       case DAY:
-        valueExtractorF = InsertWallclockDateTimePart::getDay;
+        datePartExtractor = InsertWallclockDateTimePart::getDay;
         break;
       case HOUR:
-        valueExtractorF = InsertWallclockDateTimePart::getHour;
+        datePartExtractor = InsertWallclockDateTimePart::getHour;
         break;
       case MINUTE:
-        valueExtractorF = InsertWallclockDateTimePart::getMinute;
+        datePartExtractor = InsertWallclockDateTimePart::getMinute;
         break;
       case SECOND:
-        valueExtractorF = InsertWallclockDateTimePart::getSecond;
+        datePartExtractor = InsertWallclockDateTimePart::getSecond;
         break;
       default:
         throw new IllegalStateException("Unexpected value: " + dateTimePart);
     }
   }
 
-  private static OffsetDateTime getDateTime(Instant instant) {
-    return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
+  private static String getYear(ZonedDateTime time) {
+    return String.valueOf(time.getYear());
   }
 
-  private static String getYear(Instant instant) {
-    return String.valueOf(getDateTime(instant).getYear());
+  private static String getMonth(ZonedDateTime time) {
+    return String.valueOf(time.getMonthValue());
   }
 
-  private static String getMonth(Instant instant) {
-    return String.valueOf(getDateTime(instant).getMonthValue());
+  private static String getDay(ZonedDateTime time) {
+    return String.valueOf(time.getDayOfMonth());
   }
 
-  private static String getDay(Instant instant) {
-    return String.valueOf(getDateTime(instant).getDayOfMonth());
+  private static String getHour(ZonedDateTime time) {
+    return String.valueOf(time.getHour());
   }
 
-  private static String getHour(Instant instant) {
-    return String.valueOf(getDateTime(instant).getHour());
+  private static String getMinute(ZonedDateTime time) {
+    return String.valueOf(time.getMinute());
   }
 
-  private static String getMinute(Instant instant) {
-    return String.valueOf(getDateTime(instant).getMinute());
-  }
-
-  private static String getSecond(Instant instant) {
-    return String.valueOf(getDateTime(instant).getSecond());
+  private static String getSecond(ZonedDateTime time) {
+    return String.valueOf(time.getSecond());
   }
 }

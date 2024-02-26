@@ -16,6 +16,7 @@ The value inserted is stored as a STRING, and it holds either a string represent
 | `format`              | Sets the format of the header value inserted if the type was set to string. It can be any valid java date format.                                             | String |         |                         | High       |
 | `rolling.window.type` | Sets the window type. It can be fixed or rolling.                                                                                                             | String | minutes | hours, minutes, seconds | High       | 
 | `rolling.window.size` | Sets the window size. It can be any positive integer, and depending on the `window.type` it has an upper bound, 60 for seconds and minutes, and 24 for hours. | Int    | 15      |                         | High       |
+| `timezone`            | Sets the timezone. It can be any valid java timezone. Overwrite it when `value.type` is set to `format`, otherwise it will raise an exception.                | String | UTC     |                         | High       |
 
 ## Example
 
@@ -36,8 +37,21 @@ To store a string representation of the date and time in the format `yyyy-MM-dd 
 transforms=InsertRollingWallclock
 transforms.InsertRollingWallclock.type=io.lenses.connect.smt.header.InsertRollingWallclock
 transforms.InsertRollingWallclock.header.name=wallclock
-transforms.InsertRollingWallclock.value.type=string
+transforms.InsertRollingWallclock.value.type=format
 transforms.InsertRollingWallclock.format=yyyy-MM-dd HH:mm:ss.SSS
 transforms.InsertRollingWallclock.rolling.window.type=minutes
 transforms.InsertRollingWallclock.rolling.window.size=15
+```
+
+To use the timezone `Asia/Kolkoata`, use the following:
+
+```properties
+transforms=InsertRollingWallclock
+transforms.InsertRollingWallclock.type=io.lenses.connect.smt.header.InsertRollingWallclock
+transforms.InsertRollingWallclock.header.name=wallclock
+transforms.InsertRollingWallclock.value.type=format
+transforms.InsertRollingWallclock.format=yyyy-MM-dd HH:mm:ss.SSS
+transforms.InsertRollingWallclock.rolling.window.type=minutes
+transforms.InsertRollingWallclock.rolling.window.size=15
+transforms.InsertRollingWallclock.timezone=Asia/Kolkata
 ```
