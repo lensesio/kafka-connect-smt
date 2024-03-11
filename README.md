@@ -13,6 +13,10 @@ Furthermore, they support [Stream-Reactor](https://github.com/lensesio/stream-re
 
 * [InsertWallclock](./InsertWallclock.md) - Inserts the system clock as a message header.
 * [InsertRollingWallclock](./InsertRollingWallclock.md) - Inserts the system clock as a message header based on a rolling window boundary.
+* [InsertRollingRecordTimestampHeaders](./InsertRollingRecordTimestampHeaders.md) - Inserts date, year, month, day, hour, minute, and second headers using the record timestamp and a rolling time window configuration.
+* [InsertRollingWallclockHeaders](./InsertRollingWallclockHeaders.md) - Inserts date, year, month, day, hour, minute, and second headers using the system timestamp and a rolling time window configuration.
+* [InsertRecordTimestampHeaders](./InsertRecordTimestampHeaders.md) - Inserts date, year, month, day, hour, minute, and second headers using the record timestamp.
+* [InsertWallclockHeaders](./InsertWallclockHeaders.md) - Inserts date, year, month, day, hour, minute, and second headers using the system clock.
 * [TimestampConverter](./TimestampConverter.md) - Converts a timestamp field in the payload, record Key or Value to a different format, and optionally applies a rolling window boundary. An adapted version of the one packed in the Kafka Connect framework.
 * [InsertWallclockDateTimePart](./InsertWallclockDateTimePart.md) - Inserts the system clock year, month, day, minute, or seconds as a message header, with a value of type STRING.
 

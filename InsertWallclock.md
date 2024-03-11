@@ -2,6 +2,11 @@
 
 ## Description
 
+> **Note:** Use [InsertWallclockHeaders](./InsertWallclockHeaders.md) SMT if you want to use more than one date time
+> part. This avoids multiple SMTs and is more efficient. For example if you want to partition the data
+> by `yyyy-MM-dd/HH`,
+> then you can use `InsertWallclockHeaders` which inserts multiple headers: date, year, month,day, hour, minute, second.
+>
 A Kafka Connect Single Message Transform (SMT) that inserts the system clock as a message header.
 
 Inserts the system clock as a message header, with a value of type STRING. The value can be either a string
