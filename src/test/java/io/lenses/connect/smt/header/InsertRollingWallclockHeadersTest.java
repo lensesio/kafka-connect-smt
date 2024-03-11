@@ -22,7 +22,7 @@ import org.apache.kafka.connect.header.Headers;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link InsertRollingWallclock}. */
+/** Unit tests for {@link InsertRollingWallclockHeaders}. */
 public class InsertRollingWallclockHeadersTest {
   @Test
   public void testRollingWindowEvery15Minutes() {
