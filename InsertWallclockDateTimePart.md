@@ -2,6 +2,9 @@
 
 ## Description
 
+> **Note:** Use [InsertWallclockHeaders](./InsertWallclockHeaders.md) SMT if you want to use more than one date time
+> part. This avoids multiple SMTs and is more efficient.
+>
 A Kafka Connect Single Message Transform (SMT) that inserts the system clock year, month, day, minute, or seconds as a
 message header, with a value of type STRING.
 
@@ -50,6 +53,7 @@ transforms.InsertWallclockDateTimePart.type=io.lenses.connect.smt.header.InsertW
 transforms.InsertWallclockDateTimePart.header.name=wallclock
 transforms.InsertWallclockDateTimePart.date.time.part=hour
 ```
+
 To store the hour, and apply a timezone, use the following configuration:
 
 ```properties
