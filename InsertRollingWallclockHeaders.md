@@ -32,8 +32,8 @@ When used with the Lenses connectors for S3, GCS or Azure data lake, the headers
 Considering the headers have been prefixed by `_`, here are a few KCQL examples:
 
 ```
-connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY _date, _hour
-connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY _year, _month, _day, _hour
+connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY _header._date, _header._hour
+connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY _header._year, _header._month, _header._day, _header._hour
 ```
 
 ## Configuration
@@ -113,5 +113,5 @@ transforms.rollingWindow.hour.format="hour=yyyy"
 and in the KCQL setting utilise the headers as partitioning keys:
 
 ```properties
-connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY date, year
+connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY _header.date, _header.year
 ```
