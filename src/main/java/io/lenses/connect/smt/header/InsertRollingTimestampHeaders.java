@@ -45,7 +45,7 @@ abstract class InsertRollingTimestampHeaders<R extends ConnectRecord<R>>
               "The rolling window type. The allowed values are hours, minutes or seconds.");
   private RollingWindowDetails rollingWindowDetails;
 
-  protected InsertRollingTimestampHeaders() {
+  public InsertRollingTimestampHeaders() {
     super(CONFIG_DEF);
   }
 
