@@ -24,7 +24,7 @@ import org.apache.kafka.connect.connector.ConnectRecord;
 public class InsertWallclockHeaders<R extends ConnectRecord<R>> extends InsertTimestampHeaders<R> {
   private Supplier<Instant> instantSupplier = Instant::now;
 
-  protected InsertWallclockHeaders() {
+  public InsertWallclockHeaders() {
     super(InsertTimestampHeaders.CONFIG_DEF);
   }
 

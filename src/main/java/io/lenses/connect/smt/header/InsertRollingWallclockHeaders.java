@@ -26,6 +26,10 @@ class InsertRollingWallclockHeaders<R extends ConnectRecord<R>>
 
   private Supplier<Instant> supplier = Instant::now;
 
+  public InsertRollingWallclockHeaders() {
+    super();
+  }
+
   // used solely for testing purposes
   void setInstantSupplier(Supplier<Instant> supplier) {
     this.supplier = supplier;
