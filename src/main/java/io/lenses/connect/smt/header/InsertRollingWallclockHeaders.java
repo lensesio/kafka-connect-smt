@@ -21,7 +21,7 @@ import org.apache.kafka.connect.connector.ConnectRecord;
  *
  * @param <R> the record type
  */
-class InsertRollingWallclockHeaders<R extends ConnectRecord<R>>
+public class InsertRollingWallclockHeaders<R extends ConnectRecord<R>>
     extends InsertRollingTimestampHeaders<R> {
 
   private Supplier<Instant> supplier = Instant::now;
