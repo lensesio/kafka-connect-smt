@@ -10,6 +10,10 @@
  */
 package io.lenses.connect.smt.header;
 
+import static io.lenses.connect.smt.header.UnixPrecisionConstants.UNIX_PRECISION_MICROS;
+import static io.lenses.connect.smt.header.UnixPrecisionConstants.UNIX_PRECISION_MILLIS;
+import static io.lenses.connect.smt.header.UnixPrecisionConstants.UNIX_PRECISION_NANOS;
+import static io.lenses.connect.smt.header.UnixPrecisionConstants.UNIX_PRECISION_SECONDS;
 import static io.lenses.connect.smt.header.Utils.isBlank;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 import static org.apache.kafka.connect.transforms.util.Requirements.requireStructOrNull;
@@ -23,7 +27,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -66,10 +69,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
   public static final String TARGET_TIMEZONE_CONFIG = "target.timezone";
 
-  private static final String KEY_FIELD = "_key";
-  private static final String VALUE_FIELD = "_value";
-  private static final String TIMESTAMP_FIELD = "_timestamp";
-
   public static final String UNIX_PRECISION_CONFIG = "unix.precision";
   private static final String UNIX_PRECISION_DEFAULT = "milliseconds";
 
@@ -80,11 +79,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   private static final String TYPE_DATE = "Date";
   private static final String TYPE_TIME = "Time";
   private static final String TYPE_TIMESTAMP = "Timestamp";
-
-  private static final String UNIX_PRECISION_MILLIS = "milliseconds";
-  private static final String UNIX_PRECISION_MICROS = "microseconds";
-  private static final String UNIX_PRECISION_NANOS = "nanoseconds";
-  private static final String UNIX_PRECISION_SECONDS = "seconds";
 
   public static final Schema OPTIONAL_DATE_SCHEMA =
       org.apache.kafka.connect.data.Date.builder().optional().schema();
@@ -100,12 +94,12 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               ConfigDef.Importance.HIGH,
               "The field path containing the timestamp, or empty if the entire value"
                   + " is a timestamp. Prefix the path with the literal string '"
-                  + KEY_FIELD
+                  + FieldTypeConstants.KEY_FIELD
                   + "' or '"
-                  + VALUE_FIELD
+                  + FieldTypeConstants.VALUE_FIELD
                   + "' to specify the record key or value."
                   + "If no prefix is specified, the default is '"
-                  + VALUE_FIELD
+                  + FieldTypeConstants.VALUE_FIELD
                   + "'.")
           .define(
               HEADER_NAME_CONFIG,
@@ -429,12 +423,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     final ZoneId targetTimeZoneId;
   }
 
-  private static enum FieldType {
-    KEY,
-    VALUE,
-    TIMESTAMP
-  }
-
   private FieldType fieldType;
   private Config config;
 
@@ -443,7 +431,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     final SimpleConfig simpleConfig = new SimpleConfig(CONFIG_DEF, configs);
     String fieldConfig = simpleConfig.getString(FIELD_CONFIG);
     if (fieldConfig == null || fieldConfig.isEmpty()) {
-      fieldConfig = VALUE_FIELD;
+      fieldConfig = FieldTypeConstants.VALUE_FIELD;
     }
     final String type = simpleConfig.getString(TARGET_TYPE_CONFIG);
     final String header = simpleConfig.getString(HEADER_NAME_CONFIG);
@@ -468,31 +456,9 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     DateTimeFormatter toPattern =
         io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern, timeZone.toZoneId());
 
-    String[] fields = fieldConfig.split("\\.");
-    if (fields.length > 0) {
-      if (fields[0].equalsIgnoreCase(KEY_FIELD)) {
-        fieldType = FieldType.KEY;
-        // drop the first element
-        fields = Arrays.copyOfRange(fields, 1, fields.length);
-      } else if (fields[0].equalsIgnoreCase(TIMESTAMP_FIELD)) {
-        fieldType = FieldType.TIMESTAMP;
-        // if fields length is > 1, then it is an error since the timestamp is a primitive
-        if (fields.length > 1) {
-          throw new ConfigException(
-              "When using the record timestamp field, the field path should only be '_timestamp'.");
-        }
-        fields = new String[0];
-      } else {
-        fieldType = FieldType.VALUE;
-        if (fields[0].equalsIgnoreCase(VALUE_FIELD)) {
-          // drop the first element
-          fields = Arrays.copyOfRange(fields, 1, fields.length);
-        }
-      }
-    } else {
-      fieldType = FieldType.VALUE;
-    }
-
+    FieldTypeUtils.FieldTypeAndFields fieldTypeAndFields =
+        FieldTypeUtils.extractFieldTypeAndFields(fieldConfig);
+    fieldType = fieldTypeAndFields.getFieldType();
     // ignore NONE as a rolling window type
     final HashSet<String> ignoredRollingWindowTypes =
         new HashSet<>(Collections.singletonList("NONE"));
@@ -514,7 +480,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
 
     config =
         new Config(
-            fields,
+            fieldTypeAndFields.getFields(),
             type,
             fromPattern,
             fromFormatPattern,
@@ -574,9 +540,10 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
   }
 
   private SchemaAndValue fromRecordWithSchema(R record) {
-    final Schema schema = operatingSchema(record);
+
     if (config.fields.length == 0) {
       Object value = operatingValue(record);
+      final Schema schema = operatingSchema(record);
       return convertTimestamp(value, timestampTypeFromSchema(schema));
     } else {
       final Struct value = requireStructOrNull(operatingValue(record), PURPOSE);

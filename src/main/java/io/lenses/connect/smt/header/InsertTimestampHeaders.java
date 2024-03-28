@@ -20,6 +20,7 @@ import java.util.TimeZone;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.connector.ConnectRecord;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.transforms.Transformation;
 import org.apache.kafka.connect.transforms.util.SimpleConfig;
 
@@ -46,10 +47,9 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
   private String minuteHeader;
   private String secondHeader;
   private String dateHeader;
+  protected Locale locale;
+  protected ZoneId timeZone = ZoneId.of("UTC");
 
-  private ZoneId timeZone = ZoneId.of("UTC");
-
-  private final ConfigDef configDef;
   public static ConfigDef CONFIG_DEF =
       new ConfigDef()
           .define(
@@ -153,9 +153,7 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
     String DEFAULT_LOCALE = "en";
   }
 
-  protected InsertTimestampHeaders(ConfigDef configDef) {
-    this.configDef = configDef;
-  }
+  protected InsertTimestampHeaders(ConfigDef configDef) {}
 
   protected abstract Instant getInstant(R r);
 
@@ -167,6 +165,10 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
 
     // instant from epoch
     final Instant now = getInstant(r);
+    if (now == null) {
+      throw new DataException(
+          "The timestamp value could not be extracted or is null. Please check the configuration and the record structure.");
+    }
     final ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(now, timeZone);
     r.headers().addString(yearHeader, yearFormat.format(zonedDateTime));
     r.headers().addString(monthHeader, monthFormat.format(zonedDateTime));
@@ -201,7 +203,7 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
     minuteHeader = prefixName + "minute";
     secondHeader = prefixName + "second";
     dateHeader = prefixName + "date";
-    Locale locale = new Locale(config.getString(ConfigName.LOCALE));
+    locale = new Locale(config.getString(ConfigName.LOCALE));
     yearFormat =
         createDateTimeFormatter(
                 config.getString(ConfigName.YEAR_FORMAT_CONFIG),
@@ -247,7 +249,7 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
     configureInternal(config);
   }
 
-  private static DateTimeFormatter createDateTimeFormatter(
+  public static DateTimeFormatter createDateTimeFormatter(
       String patternConfig, String configName, Locale locale) {
     try {
       return DateTimeFormatter.ofPattern(patternConfig, locale);
