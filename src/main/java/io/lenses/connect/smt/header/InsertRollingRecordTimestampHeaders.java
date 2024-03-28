@@ -20,7 +20,7 @@ import org.apache.kafka.connect.connector.ConnectRecord;
  *
  * @param <R> the record type
  */
-class InsertRollingRecordTimestampHeaders<R extends ConnectRecord<R>>
+public class InsertRollingRecordTimestampHeaders<R extends ConnectRecord<R>>
     extends InsertRollingTimestampHeaders<R> {
 
   @Override
