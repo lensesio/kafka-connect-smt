@@ -1,4 +1,4 @@
-# Insert Wallclock
+# Insert Rolling Field Timestamp Headers
 
 ## Description
 
