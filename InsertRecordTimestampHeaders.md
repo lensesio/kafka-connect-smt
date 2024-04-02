@@ -1,4 +1,4 @@
-# Insert Wallclock
+# Insert Record Timestamp Headers
 
 ## Description
 
