@@ -2,10 +2,6 @@
 
 ## Description
 
-Got it, here's the revised text with just the paragraph:
-
----
-
 This Kafka Connect Single Message Transform (SMT) facilitates the insertion of date and time components (year, month,
 day, hour, minute, second) as headers into Kafka messages using a timestamp field within the message payload. The
 timestamp field can be in various valid formats, including long integers, strings, or date objects. The timestamp field
