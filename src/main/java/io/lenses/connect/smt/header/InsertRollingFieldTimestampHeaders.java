@@ -23,11 +23,110 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
  */
 public class InsertRollingFieldTimestampHeaders<R extends ConnectRecord<R>>
     extends InsertRollingTimestampHeaders<R> {
-
   private RecordFieldTimestamp<R> fieldTimestamp;
 
-  public static ConfigDef CONFIG_DEF =
-      RecordFieldTimestamp.extendConfigDef(InsertRollingTimestampHeaders.CONFIG_DEF);
+  public static ConfigDef CONFIG_DEF;
+
+  static {
+    // The code would be
+    // RecordFieldTimestamp.extendConfigDef(InsertRollingTimestampHeaders.CONFIG_DEF);
+    // However Connect runtime gets badly confused for reasons not understood.
+    // Connect runtime is thinking that the field setting is defined already which is not the case
+    // The workaround is to redefine all the ConfigDef settings here to avoid the Connect runtime
+    // nonsense
+    ConfigDef replicated =
+        new ConfigDef()
+            .define(
+                InsertTimestampHeaders.ConfigName.HEADER_PREFIX_NAME,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_PREFIX_NAME,
+                ConfigDef.Importance.HIGH,
+                "The prefix to use for the headers inserted. For example, if the prefix is 'wallclock_', the headers inserted will be 'wallclock_year', 'wallclock_month', etc.")
+            .define(
+                InsertTimestampHeaders.ConfigName.YEAR_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_YEAR_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the year. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_YEAR_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.MONTH_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_MONTH_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the month. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_MONTH_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.DAY_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_DAY_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the day. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_DAY_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.HOUR_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_HOUR_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the hour. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_HOUR_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.MINUTE_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_MINUTE_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the minute. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_MINUTE_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.SECOND_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_SECOND_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the second. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_SECOND_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.DATE_FORMAT_CONFIG,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_DATE_FORMAT,
+                ConfigDef.Importance.HIGH,
+                "The format to use for the date. The default is '"
+                    + InsertTimestampHeaders.ConfigName.DEFAULT_DATE_FORMAT
+                    + "'.")
+            .define(
+                InsertTimestampHeaders.ConfigName.TIMEZONE,
+                ConfigDef.Type.STRING,
+                "UTC",
+                ConfigDef.Importance.HIGH,
+                "The timezone to use.")
+            .define(
+                InsertTimestampHeaders.ConfigName.LOCALE,
+                ConfigDef.Type.STRING,
+                InsertTimestampHeaders.ConfigName.DEFAULT_LOCALE,
+                ConfigDef.Importance.HIGH,
+                "The locale to use.")
+            .define(
+                ConfigName.ROLLING_WINDOW_SIZE_CONFIG,
+                ConfigDef.Type.INT,
+                ConfigName.DEFAULT_ROLLING_WINDOW_VALUE,
+                ConfigDef.Importance.HIGH,
+                "The rolling window size. For example, if the rolling window is set to 'minutes' "
+                    + "and the rolling window value is set to 15, then the rolling window "
+                    + "is 15 minutes.")
+            .define(
+                ConfigName.ROLLING_WINDOW_TYPE_CONFIG,
+                ConfigDef.Type.STRING,
+                ConfigName.DEFAULT_ROLLING_WINDOW.name(),
+                ConfigDef.Importance.HIGH,
+                "The rolling window type. The allowed values are hours, minutes or seconds.");
+
+    CONFIG_DEF = RecordFieldTimestamp.extendConfigDef(replicated);
+  }
 
   public InsertRollingFieldTimestampHeaders() {
     super();

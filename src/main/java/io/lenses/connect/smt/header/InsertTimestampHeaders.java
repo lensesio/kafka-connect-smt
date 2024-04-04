@@ -153,7 +153,7 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
     String DEFAULT_LOCALE = "en";
   }
 
-  protected InsertTimestampHeaders(ConfigDef configDef) {}
+  protected InsertTimestampHeaders() {}
 
   protected abstract Instant getInstant(R r);
 
@@ -192,7 +192,7 @@ abstract class InsertTimestampHeaders<R extends ConnectRecord<R>> implements Tra
 
   @Override
   public void configure(Map<String, ?> props) {
-    final SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
+    final SimpleConfig config = new SimpleConfig(config(), props);
     final String timeZoneStr = config.getString(ConfigName.TIMEZONE);
     timeZone = TimeZone.getTimeZone(timeZoneStr).toZoneId();
     String prefixName = config.getString(ConfigName.HEADER_PREFIX_NAME);

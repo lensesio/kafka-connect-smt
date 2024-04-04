@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link InsertRollingRecordTimestampHeaders}. */
 public class InsertRollingFieldTimestampHeadersTest {
+
   @Test
   public void testRollingWindowEvery15Minutes() {
     ArrayList<Tuple5<String, Integer, String, String, String>> scenarios = new ArrayList<>();

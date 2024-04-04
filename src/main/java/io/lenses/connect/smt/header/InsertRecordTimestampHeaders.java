@@ -23,9 +23,7 @@ import org.apache.kafka.connect.connector.ConnectRecord;
 public class InsertRecordTimestampHeaders<R extends ConnectRecord<R>>
     extends InsertTimestampHeaders<R> {
 
-  public InsertRecordTimestampHeaders() {
-    super(InsertRecordTimestampHeaders.CONFIG_DEF);
-  }
+  public InsertRecordTimestampHeaders() {}
 
   @Override
   protected Instant getInstant(R r) {
