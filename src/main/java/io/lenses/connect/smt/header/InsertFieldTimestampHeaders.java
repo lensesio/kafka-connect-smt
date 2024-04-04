@@ -28,9 +28,7 @@ public class InsertFieldTimestampHeaders<R extends ConnectRecord<R>>
       RecordFieldTimestamp.extendConfigDef(InsertTimestampHeaders.CONFIG_DEF);
   private RecordFieldTimestamp<R> fieldTimestamp;
 
-  public InsertFieldTimestampHeaders() {
-    super(InsertRecordTimestampHeaders.CONFIG_DEF);
-  }
+  public InsertFieldTimestampHeaders() {}
 
   @Override
   protected Instant getInstant(R r) {
