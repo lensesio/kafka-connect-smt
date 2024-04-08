@@ -56,42 +56,42 @@ connect.s3.kcql=INSERT INTO $bucket:prefix SELECT * FROM kafka_topic PARTITIONBY
 To store the epoch value, use the following configuration:
 
 ```properties
-transforms=InsertWallclock
-transforms.InsertWallclock.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
+transforms=ts
+transforms.ts.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
 ```
 
 To prefix the headers with `wallclock_`, use the following:
 
 ```properties
-transforms=InsertWallclock
-transforms.InsertWallclock.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
-transforms.InsertWallclock.header.prefix.name=wallclock_
+transforms=ts
+transforms.ts.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
+transforms.ts.header.prefix.name=wallclock_
 ```
 
 To change the date format, use the following:
 
 ```properties
-transforms=InsertWallclock
-transforms.InsertWallclock.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
-transforms.InsertWallclock.date.format=yyyy-MM-dd
+transforms=ts
+transforms.ts.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
+transforms.ts.date.format=yyyy-MM-dd
 ```
 
 To use the timezone `Asia/Kolkoata`, use the following:
 
 ```properties
-transforms=InsertWallclock
-transforms.InsertWallclock.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
-transforms.InsertWallclock.timezone=Asia/Kolkata
+transforms=ts
+transforms.ts.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
+transforms.ts.timezone=Asia/Kolkata
 ```
 
 To facilitate S3, GCS, or Azure Data Lake partitioning using a Hive-like partition name format, such
 as `date=yyyy-MM-dd / hour=HH`, employ the following SMT configuration for a partition strategy.
 
 ```properties
-transforms=InsertWallclock
-transforms.InsertWallclock.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders    
-transforms.InsertWallclock.date.format="date=yyyy-MM-dd"
-transforms.InsertWallclock.hour.format="hour=yyyy"
+transforms=ts
+transforms.ts.type=io.lenses.connect.smt.header.InsertRecordTimestampHeaders
+transforms.ts.date.format="date=yyyy-MM-dd"
+transforms.ts.hour.format="hour=yyyy"
 ```
 
 and in the KCQL setting utilise the headers as partitioning keys:
