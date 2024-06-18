@@ -10,6 +10,7 @@
  */
 package io.lenses.connect.smt.header;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -19,27 +20,52 @@ import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.transforms.Transformation;
 
+/**
+ * A Kafka Connect transformation that inserts headers based on partition or offset values from
+ * SourceRecords.
+ */
 public class InsertSourcePartitionOrOffsetValue implements Transformation<SourceRecord> {
 
+  /** Default prefix for offset headers. */
   public static final String DEFAULT_PREFIX_OFFSET = "offset.";
-  public static final String DEFAULT_PREFIX_PARTITION = "partition..";
+
+  /** Default prefix for partition headers. */
+  public static final String DEFAULT_PREFIX_PARTITION = "partition.";
+
   Configuration offsetConfig;
   Configuration partitionConfig;
 
+  /** Internal class to hold configuration details for fields and prefixes. */
   static class Configuration {
 
     private final List<String> fields;
     private final String prefix;
 
+    /**
+     * Constructs a Configuration instance.
+     *
+     * @param fields List of fields to retrieve.
+     * @param prefix Prefix to prepend to each field.
+     */
     public Configuration(final List<String> fields, final String prefix) {
       this.fields = fields;
       this.prefix = prefix;
     }
 
+    /**
+     * Retrieves the list of fields.
+     *
+     * @return List of fields.
+     */
     public List<String> getFields() {
       return fields;
     }
 
+    /**
+     * Retrieves the prefix.
+     *
+     * @return Prefix.
+     */
     public String getPrefix() {
       return prefix;
     }
@@ -106,28 +132,35 @@ public class InsertSourcePartitionOrOffsetValue implements Transformation<Source
   @Override
   public void configure(Map<String, ?> map) {
     offsetConfig =
-        new Configuration(getFields(map, KEY_OFFSET_FIELDS), getPrefix(map, KEY_OFFSET_PREFIX));
+        new Configuration(
+            getFields(map, KEY_OFFSET_FIELDS),
+            getPrefix(map, KEY_OFFSET_PREFIX, DEFAULT_PREFIX_OFFSET));
     partitionConfig =
         new Configuration(
-            getFields(map, KEY_PARTITION_FIELDS), getPrefix(map, KEY_PARTITION_PREFIX));
+            getFields(map, KEY_PARTITION_FIELDS),
+            getPrefix(map, KEY_PARTITION_PREFIX, DEFAULT_PREFIX_PARTITION));
   }
 
-  private static String getPrefix(Map<String, ?> map, String keyOffsetPrefix) {
-    return Optional.ofNullable((String) map.get(keyOffsetPrefix))
-        // this exception should never be thrown if Kafka Connect assures the default value
-        .orElseThrow(() -> new IllegalStateException(keyOffsetPrefix + "not specified"));
+  private static String getPrefix(Map<String, ?> map, String prefix, String defaultPrefix) {
+    return Optional.ofNullable((String) map.get(prefix)).orElse(defaultPrefix);
   }
 
   private List<String> getFields(Map<String, ?> map, String offsetFields) {
     return Optional.ofNullable(map.get(offsetFields)).stream()
-        .map(
-            p -> {
-              if (!(p instanceof List)) {
-                throw new IllegalStateException(offsetFields + " should be a List");
-              }
-              return ((List<?>) p);
-            })
+        .map(p -> extractList(offsetFields, p))
         .flatMap(p -> p.stream().map(Object::toString))
         .collect(Collectors.toList());
+  }
+
+  private static List<?> extractList(String offsetFields, Object p) {
+    if (p instanceof List) {
+      return ((List<?>) p);
+    } else if (p instanceof String) {
+      var split = ((String) p).split(",");
+      return Arrays.asList(split);
+    } else {
+      throw new IllegalStateException(
+          offsetFields + " should be a List but they are a " + p.getClass().getName());
+    }
   }
 }
