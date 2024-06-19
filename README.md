@@ -42,14 +42,33 @@ To check the code style run:
 mvn checkstyle:check
 ```
 
+## Formatter
+
 To format the code run:
 
 ```bash
   mvn com.coveo:fmt-maven-plugin:format
 ```
 
+## License Headers
+
 To add license header, run:
 
 ```bash
 mvn license:format
 ```
+
+## Dependency Check
+
+To run the dependency check:
+
+1. **Getting NVD API Key:**
+    - Visit the [National Vulnerability Database (NVD) Website](https://nvd.nist.gov), sign up or log in to obtain your API key.
+
+2. **Setting NVD API Key in Environment Variable:**
+    - **Mac (zsh):** Add `export NVD_API_KEY=your_api_key_here` to `~/.zshrc`.
+    - **Windows:** Use `setx NVD_API_KEY "your_api_key_here"` in Command Prompt (Admin).
+    - **Linux (bash):** Add `export NVD_API_KEY=your_api_key_here` to `~/.bashrc`.
+
+3. **Running `mvn verify` for Dependency Check Plugin:**
+    - Run `mvn verify` to execute it. This will put a `dependency-check-report.html` in the target directory which will give you details of the scan result.

@@ -165,6 +165,34 @@
                     </mapping>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.2.0</version>
+                <configuration>
+                    <failBuildOnCVSS>5</failBuildOnCVSS>
+                    <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+                    <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                    <scanSet>
+                            <fileSet>
+                                <directory>${basedir}/target</directory>
+                                <includes>
+                                    <include>kafka-connect-smt-*.jar</include>
+                                </includes>
+                            </fileSet>
+                    </scanSet>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-dependencies</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
