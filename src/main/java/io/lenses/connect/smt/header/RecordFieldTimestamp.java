@@ -44,16 +44,20 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
   private final String unixPrecision;
   private final ZoneId timeZone;
 
+  private final Optional<PropsFormatter> propsFormatter;
+
   private RecordFieldTimestamp(
       FieldTypeUtils.FieldTypeAndFields fieldTypeAndFields,
       Optional<DateTimeFormatter> fromPattern,
       String unixPrecision,
-      ZoneId timeZone) {
+      ZoneId timeZone,
+      Optional<PropsFormatter> propsFormatter) {
 
     this.fieldTypeAndFields = fieldTypeAndFields;
     this.fromPattern = fromPattern;
     this.unixPrecision = unixPrecision;
     this.timeZone = timeZone;
+    this.propsFormatter = propsFormatter;
   }
 
   public FieldTypeUtils.FieldTypeAndFields getFieldTypeAndFields() {
@@ -85,7 +89,7 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
         return null;
       }
       if (fieldTypeAndFields.getFields().length == 0) {
-        return convertToTimestamp(value, unixPrecision, fromPattern, timeZone);
+        return convertToTimestamp(value, unixPrecision, fromPattern, timeZone, propsFormatter);
       }
       final Schema schema = operatingSchema(r);
       Object extractedValue;
@@ -110,7 +114,7 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
                 + " instead.");
       }
 
-      return convertToTimestamp(extractedValue, unixPrecision, fromPattern, timeZone);
+      return convertToTimestamp(extractedValue, unixPrecision, fromPattern, timeZone, propsFormatter);
     }
   }
 
@@ -155,7 +159,7 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
                     InsertTimestampHeaders.createDateTimeFormatter(
                         pattern, FORMAT_FROM_CONFIG, locale));
 
-    return new RecordFieldTimestamp<>(fieldTypeAndFields, fromPattern, unixPrecision, zoneId);
+    return new RecordFieldTimestamp<>(fieldTypeAndFields, fromPattern, unixPrecision, zoneId, Optional.of(new PropsFormatter(config)));
   }
 
   public static ConfigDef extendConfigDef(ConfigDef from) {

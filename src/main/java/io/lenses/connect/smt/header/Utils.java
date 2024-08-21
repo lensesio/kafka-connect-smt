@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
@@ -33,7 +34,11 @@ import org.apache.kafka.connect.errors.DataException;
 class Utils {
 
   static Instant convertToTimestamp(
-      Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId) {
+          Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId) {
+    return convertToTimestamp(value, unixPrecision, fromPattern, zoneId, Optional.empty());
+  }
+    static Instant convertToTimestamp(
+          Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId, Optional<PropsFormatter> propsFormatter) {
     if (value == null) {
       return Instant.now();
     }
@@ -74,7 +79,7 @@ class Utils {
                 try {
                   return Instant.ofEpochMilli(Long.parseLong((String) value));
                 } catch (NumberFormatException e) {
-                  throw new DataException("Expected a long, but found " + value);
+                  throw new DataException("Expected a long, but found " + value + ". Props: " + propsFormatter.map(PropsFormatter::apply).orElse("(No props formatter)"));
                 }
               });
     }
