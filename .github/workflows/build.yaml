@@ -28,6 +28,9 @@ jobs:
       - name: Build
         run: mvn clean package -B
 
+      - name: Test
+        run: mvn test
+
       - name: Create JAR
         run: mvn jar:jar
 

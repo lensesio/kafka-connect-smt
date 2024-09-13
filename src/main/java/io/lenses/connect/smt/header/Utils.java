@@ -17,7 +17,6 @@ import static io.lenses.connect.smt.header.UnixPrecisionConstants.UNIX_PRECISION
 import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -25,7 +24,6 @@ import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.data.Field;
 import org.apache.kafka.connect.data.Struct;
@@ -34,11 +32,11 @@ import org.apache.kafka.connect.errors.DataException;
 class Utils {
 
   static Instant convertToTimestamp(
-          Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId) {
-    return convertToTimestamp(value, unixPrecision, fromPattern, zoneId, Optional.empty());
-  }
-    static Instant convertToTimestamp(
-          Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId, Optional<PropsFormatter> propsFormatter) {
+      Object value,
+      String unixPrecision,
+      Optional<MultiDateTimeFormatter> fromPattern,
+      ZoneId zoneId,
+      Optional<PropsFormatter> propsFormatter) {
     if (value == null) {
       return Instant.now();
     }
@@ -63,8 +61,7 @@ class Utils {
           .map(
               pattern -> {
                 try {
-                  final LocalDateTime localDateTime = LocalDateTime.parse((String) value, pattern);
-                  return localDateTime.atZone(zoneId).toInstant();
+                  return pattern.format((String) value, zoneId);
                 } catch (Exception e) {
                   throw new DataException(
                       "Could not parse the string timestamp: "
@@ -79,7 +76,13 @@ class Utils {
                 try {
                   return Instant.ofEpochMilli(Long.parseLong((String) value));
                 } catch (NumberFormatException e) {
-                  throw new DataException("Expected a long, but found " + value + ". Props: " + propsFormatter.map(PropsFormatter::apply).orElse("(No props formatter)"));
+                  throw new DataException(
+                      "Expected a long, but found "
+                          + value
+                          + ". Props: "
+                          + propsFormatter
+                              .map(PropsFormatter::apply)
+                              .orElse("(No props formatter)"));
                 }
               });
     }

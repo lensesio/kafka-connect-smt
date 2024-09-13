@@ -25,7 +25,7 @@ public class InsertRollingFieldTimestampHeaders<R extends ConnectRecord<R>>
     extends InsertRollingTimestampHeaders<R> {
   private RecordFieldTimestamp<R> fieldTimestamp;
 
-  public static ConfigDef CONFIG_DEF;
+  public static final ConfigDef CONFIG_DEF;
 
   static {
     // The code would be
