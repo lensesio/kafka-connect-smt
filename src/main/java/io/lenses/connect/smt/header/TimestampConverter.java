@@ -20,7 +20,6 @@ import static org.apache.kafka.connect.transforms.util.Requirements.requireStruc
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -31,7 +30,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -431,7 +429,13 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     if (header == null || header.isEmpty()) {
       throw new ConfigException("TimestampConverter requires header key to be specified");
     }
-    List<String> fromFormatPattern = simpleConfig.getList(FORMAT_FROM_CONFIG);
+
+    MultiDateTimeFormatter fromPattern = Optional
+            .ofNullable(simpleConfig.getList(FORMAT_FROM_CONFIG))
+            .map(fromFormatPattern -> MultiDateTimeFormatter.createDateTimeFormatter(
+                    fromFormatPattern, FORMAT_FROM_CONFIG, Constants.UTC.toZoneId()))
+            .orElse(null);
+
     String toFormatPattern = simpleConfig.getString(FORMAT_TO_CONFIG);
 
     final String unixPrecision = simpleConfig.getString(UNIX_PRECISION_CONFIG);
@@ -443,9 +447,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
           "TimestampConverter requires format option to be specified "
               + "when using string timestamps");
     }
-    MultiDateTimeFormatter fromPattern = MultiDateTimeFormatter.createDateTimeFormatter(
-            fromFormatPattern, FORMAT_FROM_CONFIG, Constants.UTC.toZoneId());
-
     DateTimeFormatter toPattern =
         io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern, timeZone.toZoneId());
 

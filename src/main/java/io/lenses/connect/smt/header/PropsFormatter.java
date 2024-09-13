@@ -41,7 +41,7 @@ public class PropsFormatter {
      */
     public String apply() {
         StringBuilder sb = new StringBuilder("{");
-        simpleConfig.originalsStrings().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach((entry) -> sb.append(entry.getKey()).append(": \"").append(entry.getValue()).append("\", "));
+        simpleConfig.originalsStrings().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach(entry -> sb.append(entry.getKey()).append(": \"").append(entry.getValue()).append("\", "));
         sb.delete(sb.length() - 2, sb.length());
         return sb.append("}").toString();
     }

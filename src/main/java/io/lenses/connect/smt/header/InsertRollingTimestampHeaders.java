@@ -27,7 +27,7 @@ import org.apache.kafka.connect.transforms.util.SimpleConfig;
 abstract class InsertRollingTimestampHeaders<R extends ConnectRecord<R>>
     extends InsertTimestampHeaders<R> {
 
-  public static ConfigDef CONFIG_DEF =
+  public static final ConfigDef CONFIG_DEF =
       InsertTimestampHeaders.CONFIG_DEF
           .define(
               ConfigName.ROLLING_WINDOW_SIZE_CONFIG,

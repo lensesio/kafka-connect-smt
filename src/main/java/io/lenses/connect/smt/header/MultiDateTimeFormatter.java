@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 
 class MultiDateTimeFormatter {
 
-    private List<DateTimeFormatter> formatters;
-    private List<String> patterns;
-    private Boolean returnNowIfNull;
+    private final List<DateTimeFormatter> formatters;
+    private final List<String> patterns;
+    private final Boolean returnNowIfNull;
 
     public MultiDateTimeFormatter(
             List<String> patterns,
@@ -37,6 +37,7 @@ class MultiDateTimeFormatter {
                 return localDateTime.atZone(zoneId).toInstant();
             } catch (DateTimeParseException dtpe) {
                 // ignore exception and use fallback
+                System.err.println("ERROR: " + dtpe.getMessage());
             }
         }
         throw new DateTimeParseException("Cannot parse date with any formats", value, 0);

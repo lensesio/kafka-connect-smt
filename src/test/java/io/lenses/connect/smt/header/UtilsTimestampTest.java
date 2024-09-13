@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UtilsTimestampTest {
 
-    public static final String TIMESTAMP = "2024-08-16T04:30:00.232Z";
-    public static final String PRECISION = "milliseconds";
+    private static final String TIMESTAMP = "2024-08-16T04:30:00.232Z";
+    private static final String PRECISION = "milliseconds";
 
     @Test
     void convertToTimestampShouldWritePropsOnFailure() {
@@ -37,7 +37,7 @@ class UtilsTimestampTest {
                 ZoneId.of("UTC"),
                 Optional.of(propsFormatter)
         ));
-        assertEquals("Expected a long, but found 2024-08-16T04:30:00.232Z. Props: {some: \"props\", for: \"2\"}",dataException.getMessage());
+        assertEquals("Expected a long, but found 2024-08-16T04:30:00.232Z. Props: {for: \"2\", some: \"props\"}",dataException.getMessage());
     }
 
     @Test
