@@ -12,6 +12,9 @@ package io.lenses.connect.smt.header;
 
 import org.apache.kafka.connect.transforms.util.SimpleConfig;
 
+import java.util.Comparator;
+import java.util.Map;
+
 /**
  * This class is responsible for formatting properties from a SimpleConfig object.
  * It converts the properties into a string representation in a json-like format.
@@ -38,7 +41,7 @@ public class PropsFormatter {
      */
     public String apply() {
         StringBuilder sb = new StringBuilder("{");
-        simpleConfig.originalsStrings().forEach((k, v) -> sb.append(k).append(": \"").append(v).append("\", "));
+        simpleConfig.originalsStrings().entrySet().stream().sorted(Map.Entry.comparingByKey()).forEach((entry) -> sb.append(entry.getKey()).append(": \"").append(entry.getValue()).append("\", "));
         sb.delete(sb.length() - 2, sb.length());
         return sb.append("}").toString();
     }

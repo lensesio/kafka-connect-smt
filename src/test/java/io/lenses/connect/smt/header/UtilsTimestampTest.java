@@ -46,7 +46,8 @@ class UtilsTimestampTest {
                 TIMESTAMP,
                 PRECISION,
                 Optional.empty(),
-                ZoneId.of("UTC")
+                ZoneId.of("UTC"),
+                Optional.empty()
         ));
         assertEquals("Expected a long, but found 2024-08-16T04:30:00.232Z. Props: (No props formatter)",dataException.getMessage());
     }

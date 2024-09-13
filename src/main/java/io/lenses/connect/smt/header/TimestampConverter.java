@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -117,7 +118,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
               "The desired timestamp representation: string, unix, Date, Time, or Timestamp")
           .define(
               FORMAT_FROM_CONFIG,
-              ConfigDef.Type.STRING,
+              ConfigDef.Type.LIST,
               null,
               ConfigDef.Importance.MEDIUM,
               "A DateTimeFormatter-compatible format for the timestamp. Used to parse the"
@@ -196,15 +197,13 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
                       + "' configuration property.");
             }
             try {
-              final LocalDateTime localDateTime =
-                  LocalDateTime.parse((String) orig, config.fromFormat);
-              return Date.from(localDateTime.atZone(ZoneOffset.UTC).toInstant());
+              return Date.from(config.fromFormat.format((String) orig, ZoneOffset.UTC));
             } catch (DateTimeParseException e) {
               throw new DataException(
                   "Could not parse timestamp: value ("
                       + orig
-                      + ") does not match pattern ("
-                      + config.fromFormatPattern
+                      + ") does not match any patterns ("
+                      + config.fromFormat.getDisplayPatterns()
                       + ")",
                   e);
             }
@@ -387,10 +386,8 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     Config(
         String[] fields,
         String type,
-        DateTimeFormatter fromFormat,
-        String fromFormatPattern,
+        MultiDateTimeFormatter fromFormat,
         DateTimeFormatter toFormat,
-        String toFormatPattern,
         String unixPrecision,
         String header,
         Optional<RollingWindowDetails> rollingWindow,
@@ -398,8 +395,6 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
       this.fields = fields;
       this.type = type;
       this.fromFormat = fromFormat;
-      this.fromFormatPattern = fromFormatPattern;
-      this.toFormatPattern = toFormatPattern;
       this.toFormat = toFormat;
       this.unixPrecision = unixPrecision;
       this.header = header;
@@ -411,9 +406,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     String[] fields;
     String header;
     String type;
-    String fromFormatPattern;
-    String toFormatPattern;
-    final DateTimeFormatter fromFormat;
+    final MultiDateTimeFormatter fromFormat;
     final DateTimeFormatter toFormat;
     String unixPrecision;
 
@@ -438,7 +431,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
     if (header == null || header.isEmpty()) {
       throw new ConfigException("TimestampConverter requires header key to be specified");
     }
-    String fromFormatPattern = simpleConfig.getString(FORMAT_FROM_CONFIG);
+    List<String> fromFormatPattern = simpleConfig.getList(FORMAT_FROM_CONFIG);
     String toFormatPattern = simpleConfig.getString(FORMAT_TO_CONFIG);
 
     final String unixPrecision = simpleConfig.getString(UNIX_PRECISION_CONFIG);
@@ -450,9 +443,9 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
           "TimestampConverter requires format option to be specified "
               + "when using string timestamps");
     }
-    DateTimeFormatter fromPattern =
-        io.lenses.connect.smt.header.Utils.getDateFormat(
-            fromFormatPattern, Constants.UTC.toZoneId());
+    MultiDateTimeFormatter fromPattern = MultiDateTimeFormatter.createDateTimeFormatter(
+            fromFormatPattern, FORMAT_FROM_CONFIG, Constants.UTC.toZoneId());
+
     DateTimeFormatter toPattern =
         io.lenses.connect.smt.header.Utils.getDateFormat(toFormatPattern, timeZone.toZoneId());
 
@@ -483,9 +476,7 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
             fieldTypeAndFields.getFields(),
             type,
             fromPattern,
-            fromFormatPattern,
             toPattern,
-            toFormatPattern,
             unixPrecision,
             header,
             rollingWindowDetails,

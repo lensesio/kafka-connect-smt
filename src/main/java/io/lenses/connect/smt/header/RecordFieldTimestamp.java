@@ -40,7 +40,7 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
   public static final String UNIX_PRECISION_CONFIG = "unix.precision";
   private static final String UNIX_PRECISION_DEFAULT = "milliseconds";
   private final FieldTypeUtils.FieldTypeAndFields fieldTypeAndFields;
-  private final Optional<DateTimeFormatter> fromPattern;
+  private final Optional<MultiDateTimeFormatter> fromPattern;
   private final String unixPrecision;
   private final ZoneId timeZone;
 
@@ -48,7 +48,7 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
 
   private RecordFieldTimestamp(
       FieldTypeUtils.FieldTypeAndFields fieldTypeAndFields,
-      Optional<DateTimeFormatter> fromPattern,
+      Optional<MultiDateTimeFormatter> fromPattern,
       String unixPrecision,
       ZoneId timeZone,
       Optional<PropsFormatter> propsFormatter) {
@@ -62,10 +62,6 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
 
   public FieldTypeUtils.FieldTypeAndFields getFieldTypeAndFields() {
     return fieldTypeAndFields;
-  }
-
-  public Optional<DateTimeFormatter> getFromPattern() {
-    return fromPattern;
   }
 
   public String getUnixPrecision() {
@@ -152,12 +148,12 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
     final String unixPrecision =
         Optional.ofNullable(config.getString(UNIX_PRECISION_CONFIG)).orElse(UNIX_PRECISION_DEFAULT);
 
-    final Optional<DateTimeFormatter> fromPattern =
-        Optional.ofNullable(config.getString(FORMAT_FROM_CONFIG))
+    final Optional<MultiDateTimeFormatter> fromPattern =
+        Optional.ofNullable(config.getList(FORMAT_FROM_CONFIG))
             .map(
-                pattern ->
-                    InsertTimestampHeaders.createDateTimeFormatter(
-                        pattern, FORMAT_FROM_CONFIG, locale));
+                patterns ->
+                    MultiDateTimeFormatter.createDateTimeFormatter(
+                        patterns, FORMAT_FROM_CONFIG, locale));
 
     return new RecordFieldTimestamp<>(fieldTypeAndFields, fromPattern, unixPrecision, zoneId, Optional.of(new PropsFormatter(config)));
   }
@@ -179,7 +175,7 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
                 + "'.")
         .define(
             FORMAT_FROM_CONFIG,
-            ConfigDef.Type.STRING,
+            ConfigDef.Type.LIST,
             null,
             ConfigDef.Importance.MEDIUM,
             "A DateTimeFormatter-compatible format for the timestamp. Used to parse the"

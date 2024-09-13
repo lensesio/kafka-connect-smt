@@ -17,93 +17,107 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import org.apache.kafka.connect.errors.DataException;
 import org.junit.jupiter.api.Test;
 
-public class ConvertToTimestampTest {
+class ConvertToTimestampTest {
 
   @Test
-  public void convertToTimestampReturnsCurrentTimeWhenValueIsNull() {
+  void convertToTimestampReturnsCurrentTimeWhenValueIsNull() {
     Instant result =
-        Utils.convertToTimestamp(null, "seconds", Optional.empty(), ZoneId.systemDefault());
+        Utils.convertToTimestamp(null, "seconds", Optional.empty(), ZoneId.systemDefault(),                Optional.empty()
+        );
     assertNotNull(result);
   }
 
   @Test
-  public void convertToTimestampReturnsSameInstantWhenValueIsInstant() {
+  void convertToTimestampReturnsSameInstantWhenValueIsInstant() {
     Instant instant = Instant.now();
     Instant result =
-        Utils.convertToTimestamp(instant, "seconds", Optional.empty(), ZoneId.systemDefault());
+        Utils.convertToTimestamp(instant, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
     assertEquals(instant, result);
   }
 
   @Test
-  public void convertToTimestampReturnsCorrectInstantWhenValueIsLong() {
-    Long value = 1633097000L; // corresponds to 2021-10-01T11:30:00Z
+  void convertToTimestampReturnsCorrectInstantWhenValueIsLong() {
+    long value = 1633097000L; // corresponds to 2021-10-01T11:30:00Z
     Instant result =
-        Utils.convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault());
+        Utils.convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
     assertEquals(Instant.ofEpochSecond(value), result);
   }
 
   @Test
-  public void convertToTimestampReturnsCorrectInstantWhenValueIsString() {
+  void convertToTimestampReturnsCorrectInstantWhenValueIsString() {
     String value = "2021-10-01T11:30:00Z";
     Instant result =
         Utils.convertToTimestamp(
             value,
             "seconds",
-            Optional.of(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZZZZZ").withZone(UTC)),
-            UTC);
+            Optional.of(createMultiDateTimeFormatter()),
+            UTC,
+                Optional.empty());
     assertEquals(Instant.parse(value), result);
   }
 
+  private static MultiDateTimeFormatter createMultiDateTimeFormatter() {
+    return MultiDateTimeFormatter.createDateTimeFormatter(
+            List.of("yyyy-MM-dd'T'HH:mm:ssZZZZZ"),
+            "Unit test",
+            UTC);
+  }
+
   @Test
-  public void convertToTimestampThrowsDataExceptionWhenValueIsInvalidString() {
+  void convertToTimestampThrowsDataExceptionWhenValueIsInvalidString() {
     String value = "invalid";
     assertThrows(
         DataException.class,
         () ->
-            Utils.convertToTimestamp(
+            convertToTimestamp(
                 value,
                 "seconds",
-                Optional.of(
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZZZZZ").withZone(UTC)),
-                UTC));
+                Optional.of(createMultiDateTimeFormatter()),
+                    UTC));
   }
 
   @Test
-  public void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsMicros() {
+  void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsMicros() {
     Long value = 1633097000000000L; // corresponds to 2021-10-01T11:30:00Z
     Instant result =
-        Utils.convertToTimestamp(value, "microseconds", Optional.empty(), ZoneId.systemDefault());
+        convertToTimestamp(value, "microseconds", Optional.empty(), ZoneId.systemDefault());
     assertEquals(Instant.ofEpochSecond(1633097000L, 0), result);
   }
 
   @Test
-  public void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsNanos() {
-    Long value = 1633097000000000L; // corresponds to 2021-10-01T11:30:00Z
+  void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsNanos() {
+    long value = 1633097000000000L; // corresponds to 2021-10-01T11:30:00Z
     Instant result =
-        Utils.convertToTimestamp(value, "nanoseconds", Optional.empty(), ZoneId.systemDefault());
+        convertToTimestamp(value, "nanoseconds", Optional.empty(), ZoneId.systemDefault());
     // Convert nanoseconds to seconds and add to epoch second
     Instant expected = Instant.ofEpochSecond(value / 1_000_000_000L);
     assertEquals(expected, result);
   }
 
   @Test
-  public void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsMillis() {
+  void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsMillis() {
     Long value = 1633097000000L; // corresponds to 2021-10-01T11:30:00Z
     Instant result =
-        Utils.convertToTimestamp(value, "milliseconds", Optional.empty(), ZoneId.systemDefault());
+        convertToTimestamp(value, "milliseconds", Optional.empty(), ZoneId.systemDefault());
     assertEquals(Instant.ofEpochSecond(1633097000L, 0), result);
   }
 
   @Test
-  public void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsSeconds() {
+  void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsSeconds() {
     Long value = 1633097000L; // corresponds to 2021-10-01T11:30:00Z
     Instant result =
-        Utils.convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault());
+        convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault());
     assertEquals(Instant.ofEpochSecond(1633097000L, 0), result);
+  }
+
+
+  static Instant convertToTimestamp(
+          Object value, String unixPrecision, Optional<MultiDateTimeFormatter> fromPattern, ZoneId zoneId) {
+    return Utils.convertToTimestamp(value, unixPrecision, fromPattern, zoneId, Optional.empty());
   }
 }

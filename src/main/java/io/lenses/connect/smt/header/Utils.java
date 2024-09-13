@@ -33,12 +33,8 @@ import org.apache.kafka.connect.errors.DataException;
 
 class Utils {
 
-  static Instant convertToTimestamp(
-          Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId) {
-    return convertToTimestamp(value, unixPrecision, fromPattern, zoneId, Optional.empty());
-  }
     static Instant convertToTimestamp(
-          Object value, String unixPrecision, Optional<DateTimeFormatter> fromPattern, ZoneId zoneId, Optional<PropsFormatter> propsFormatter) {
+          Object value, String unixPrecision, Optional<MultiDateTimeFormatter> fromPattern, ZoneId zoneId, Optional<PropsFormatter> propsFormatter) {
     if (value == null) {
       return Instant.now();
     }
@@ -63,8 +59,7 @@ class Utils {
           .map(
               pattern -> {
                 try {
-                  final LocalDateTime localDateTime = LocalDateTime.parse((String) value, pattern);
-                  return localDateTime.atZone(zoneId).toInstant();
+                  return pattern.format((String) value, zoneId);
                 } catch (Exception e) {
                   throw new DataException(
                       "Could not parse the string timestamp: "
