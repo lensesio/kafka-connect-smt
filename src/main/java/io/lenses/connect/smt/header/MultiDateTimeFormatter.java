@@ -30,6 +30,8 @@ class MultiDateTimeFormatter {
     public Instant format(String value, ZoneId zoneId) {
         if (value == null && returnNowIfNull) {
             return LocalDateTime.now().atZone(zoneId).toInstant();
+        } else if (value == null) {
+            throw new DateTimeParseException("No valid date time provided", "null", 0);
         }
         for (DateTimeFormatter formatter : formatters) {
             try {
