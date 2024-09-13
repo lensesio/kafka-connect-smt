@@ -281,9 +281,8 @@ class TimestampConverterTest {
 
     String headerValue = (String) header.value();
     assertTrue(
-            headerValue.equals( "1970 01 01 18 00 01 234 CST") ||
-                    headerValue.equals( "1970 01 01 18 00 01 234 GMT-06:00")
-    );
+        headerValue.equals("1970 01 01 18 00 01 234 CST")
+            || headerValue.equals("1970 01 01 18 00 01 234 GMT-06:00"));
   }
 
   // Conversions without schemas (core types -> most flexible Timestamp format)

@@ -13,7 +13,6 @@ package io.lenses.connect.smt.header;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -405,62 +404,71 @@ class InsertRollingFieldTimestampHeadersTest {
         });
   }
 
-    @Test
-    void testMultipleDateFormats() {
-        // one format with millis, one without.  Do we fallback to the backup format?
-        String pattern1 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-        String pattern2 = "yyyy-MM-dd'T'HH:mm:ss'Z'";
+  @Test
+  void testMultipleDateFormats() {
+    // one format with millis, one without.  Do we fallback to the backup format?
+    String pattern1 = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    String pattern2 = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
-        List<Tuple5<String, Integer, String, String, String>> scenarios = List.of(
-                new Tuple5<>(("2020-01-01T01:00:00.999Z"), 15, "2020-01-01 01:00", "01", "00"),
-                new Tuple5<>(("2020-01-01T01:00:01Z"), 15, "2020-01-01 01:00", "01", "00"),
-                new Tuple5<>(("2020-01-01T01:14:59.000Z"), 15, "2020-01-01 01:00", "01", "00"),
-                new Tuple5<>(("2020-01-01T01:15:00Z"), 15, "2020-01-01 01:15", "01", "15"),
-                new Tuple5<>(("2020-01-01T01:15:01.000Z"), 15, "2020-01-01 01:15", "01", "15"),
-                new Tuple5<>(("2020-01-01T01:29:59Z"), 15, "2020-01-01 01:15", "01", "15"),
-                new Tuple5<>(("2020-01-01T01:30:00.000Z"), 15, "2020-01-01 01:30", "01", "30"),
-                new Tuple5<>(("2020-01-01T01:30:01Z"), 15, "2020-01-01 01:30", "01", "30"),
-                new Tuple5<>(("2020-01-01T01:44:59.000Z"), 15, "2020-01-01 01:30", "01", "30"),
-                new Tuple5<>(("2020-01-01T01:45:00Z"), 15, "2020-01-01 01:45", "01", "45"),
-                new Tuple5<>(("2020-01-01T01:45:01.000Z"), 15, "2020-01-01 01:45", "01", "45"),
-                new Tuple5<>(("2020-01-01T01:59:59Z"), 15, "2020-01-01 01:45", "01", "45")
-        );
-        scenarios.forEach(
-                scenario -> {
-                    Map<String, String> configs = Map.of(
-                            "header.prefix.name", "wallclock_",
-                            "date.format", "yyyy-MM-dd HH:mm",
-                            "format.from.pattern", pattern1 + "," + pattern2,
-                            "window.size", scenario.second.toString(),
-                            "window.type", "minutes",
-                            "field", "_value"
-                    );
+    List<Tuple5<String, Integer, String, String, String>> scenarios =
+        List.of(
+            new Tuple5<>(("2020-01-01T01:00:00.999Z"), 15, "2020-01-01 01:00", "01", "00"),
+            new Tuple5<>(("2020-01-01T01:00:01Z"), 15, "2020-01-01 01:00", "01", "00"),
+            new Tuple5<>(("2020-01-01T01:14:59.000Z"), 15, "2020-01-01 01:00", "01", "00"),
+            new Tuple5<>(("2020-01-01T01:15:00Z"), 15, "2020-01-01 01:15", "01", "15"),
+            new Tuple5<>(("2020-01-01T01:15:01.000Z"), 15, "2020-01-01 01:15", "01", "15"),
+            new Tuple5<>(("2020-01-01T01:29:59Z"), 15, "2020-01-01 01:15", "01", "15"),
+            new Tuple5<>(("2020-01-01T01:30:00.000Z"), 15, "2020-01-01 01:30", "01", "30"),
+            new Tuple5<>(("2020-01-01T01:30:01Z"), 15, "2020-01-01 01:30", "01", "30"),
+            new Tuple5<>(("2020-01-01T01:44:59.000Z"), 15, "2020-01-01 01:30", "01", "30"),
+            new Tuple5<>(("2020-01-01T01:45:00Z"), 15, "2020-01-01 01:45", "01", "45"),
+            new Tuple5<>(("2020-01-01T01:45:01.000Z"), 15, "2020-01-01 01:45", "01", "45"),
+            new Tuple5<>(("2020-01-01T01:59:59Z"), 15, "2020-01-01 01:45", "01", "45"));
+    scenarios.forEach(
+        scenario -> {
+          Map<String, String> configs =
+              Map.of(
+                  "header.prefix.name", "wallclock_",
+                  "date.format", "yyyy-MM-dd HH:mm",
+                  "format.from.pattern", pattern1 + "," + pattern2,
+                  "window.size", scenario.second.toString(),
+                  "window.type", "minutes",
+                  "field", "_value");
 
-                    final SourceRecord transformed;
-                    try (InsertRollingFieldTimestampHeaders<SourceRecord> transformer = new InsertRollingFieldTimestampHeaders<>()) {
-                        transformer.configure(configs);
+          final SourceRecord transformed;
+          try (InsertRollingFieldTimestampHeaders<SourceRecord> transformer =
+              new InsertRollingFieldTimestampHeaders<>()) {
+            transformer.configure(configs);
 
-                        transformed = transformer.apply(
-                                new SourceRecord(
-                                null, null, "topic", 0, Schema.STRING_SCHEMA, "key", null, scenario.first, 0L, new ConnectHeaders())
-                        );
-                    }
-                    final String actualDate =
-                            transformed.headers().lastWithName("wallclock_date").value().toString();
-                    assertEquals(actualDate, scenario.third);
+            transformed =
+                transformer.apply(
+                    new SourceRecord(
+                        null,
+                        null,
+                        "topic",
+                        0,
+                        Schema.STRING_SCHEMA,
+                        "key",
+                        null,
+                        scenario.first,
+                        0L,
+                        new ConnectHeaders()));
+          }
+          final String actualDate =
+              transformed.headers().lastWithName("wallclock_date").value().toString();
+          assertEquals(actualDate, scenario.third);
 
-                    final String actualHour =
-                            transformed.headers().lastWithName("wallclock_hour").value().toString();
-                    assertEquals(actualHour, scenario.fourth);
+          final String actualHour =
+              transformed.headers().lastWithName("wallclock_hour").value().toString();
+          assertEquals(actualHour, scenario.fourth);
 
-                    final String actualMinute =
-                            transformed.headers().lastWithName("wallclock_minute").value().toString();
-                    assertEquals(actualMinute, scenario.fifth);
-                });
-    }
+          final String actualMinute =
+              transformed.headers().lastWithName("wallclock_minute").value().toString();
+          assertEquals(actualMinute, scenario.fifth);
+        });
+  }
 
-
-    static class Tuple5<A, B, C, D, E> {
+  static class Tuple5<A, B, C, D, E> {
     private final A first;
     private final B second;
     private final C third;

@@ -21,7 +21,6 @@ import static org.apache.kafka.connect.transforms.util.Requirements.requireMap;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
@@ -110,7 +109,8 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
                 + " instead.");
       }
 
-      return convertToTimestamp(extractedValue, unixPrecision, fromPattern, timeZone, propsFormatter);
+      return convertToTimestamp(
+          extractedValue, unixPrecision, fromPattern, timeZone, propsFormatter);
     }
   }
 
@@ -155,7 +155,12 @@ class RecordFieldTimestamp<R extends ConnectRecord<R>> {
                     MultiDateTimeFormatter.createDateTimeFormatter(
                         patterns, FORMAT_FROM_CONFIG, locale));
 
-    return new RecordFieldTimestamp<>(fieldTypeAndFields, fromPattern, unixPrecision, zoneId, Optional.of(new PropsFormatter(config)));
+    return new RecordFieldTimestamp<>(
+        fieldTypeAndFields,
+        fromPattern,
+        unixPrecision,
+        zoneId,
+        Optional.of(new PropsFormatter(config)));
   }
 
   public static ConfigDef extendConfigDef(ConfigDef from) {

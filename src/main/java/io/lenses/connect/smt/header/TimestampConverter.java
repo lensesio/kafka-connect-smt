@@ -430,10 +430,12 @@ public final class TimestampConverter<R extends ConnectRecord<R>> implements Tra
       throw new ConfigException("TimestampConverter requires header key to be specified");
     }
 
-    MultiDateTimeFormatter fromPattern = Optional
-            .ofNullable(simpleConfig.getList(FORMAT_FROM_CONFIG))
-            .map(fromFormatPattern -> MultiDateTimeFormatter.createDateTimeFormatter(
-                    fromFormatPattern, FORMAT_FROM_CONFIG, Constants.UTC.toZoneId()))
+    MultiDateTimeFormatter fromPattern =
+        Optional.ofNullable(simpleConfig.getList(FORMAT_FROM_CONFIG))
+            .map(
+                fromFormatPattern ->
+                    MultiDateTimeFormatter.createDateTimeFormatter(
+                        fromFormatPattern, FORMAT_FROM_CONFIG, Constants.UTC.toZoneId()))
             .orElse(null);
 
     String toFormatPattern = simpleConfig.getString(FORMAT_TO_CONFIG);

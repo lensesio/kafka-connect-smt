@@ -27,8 +27,8 @@ class ConvertToTimestampTest {
   @Test
   void convertToTimestampReturnsCurrentTimeWhenValueIsNull() {
     Instant result =
-        Utils.convertToTimestamp(null, "seconds", Optional.empty(), ZoneId.systemDefault(),                Optional.empty()
-        );
+        Utils.convertToTimestamp(
+            null, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
     assertNotNull(result);
   }
 
@@ -36,7 +36,8 @@ class ConvertToTimestampTest {
   void convertToTimestampReturnsSameInstantWhenValueIsInstant() {
     Instant instant = Instant.now();
     Instant result =
-        Utils.convertToTimestamp(instant, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
+        Utils.convertToTimestamp(
+            instant, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
     assertEquals(instant, result);
   }
 
@@ -44,7 +45,8 @@ class ConvertToTimestampTest {
   void convertToTimestampReturnsCorrectInstantWhenValueIsLong() {
     long value = 1633097000L; // corresponds to 2021-10-01T11:30:00Z
     Instant result =
-        Utils.convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
+        Utils.convertToTimestamp(
+            value, "seconds", Optional.empty(), ZoneId.systemDefault(), Optional.empty());
     assertEquals(Instant.ofEpochSecond(value), result);
   }
 
@@ -53,19 +55,13 @@ class ConvertToTimestampTest {
     String value = "2021-10-01T11:30:00Z";
     Instant result =
         Utils.convertToTimestamp(
-            value,
-            "seconds",
-            Optional.of(createMultiDateTimeFormatter()),
-            UTC,
-                Optional.empty());
+            value, "seconds", Optional.of(createMultiDateTimeFormatter()), UTC, Optional.empty());
     assertEquals(Instant.parse(value), result);
   }
 
   private static MultiDateTimeFormatter createMultiDateTimeFormatter() {
     return MultiDateTimeFormatter.createDateTimeFormatter(
-            List.of("yyyy-MM-dd'T'HH:mm:ssZZZZZ"),
-            "Unit test",
-            UTC);
+        List.of("yyyy-MM-dd'T'HH:mm:ssZZZZZ"), "Unit test", UTC);
   }
 
   @Test
@@ -74,11 +70,7 @@ class ConvertToTimestampTest {
     assertThrows(
         DataException.class,
         () ->
-            convertToTimestamp(
-                value,
-                "seconds",
-                Optional.of(createMultiDateTimeFormatter()),
-                    UTC));
+            convertToTimestamp(value, "seconds", Optional.of(createMultiDateTimeFormatter()), UTC));
   }
 
   @Test
@@ -110,14 +102,15 @@ class ConvertToTimestampTest {
   @Test
   void convertToTimestampReturnsCorrectInstantWhenValueIsEpochAndPrecisionIsSeconds() {
     Long value = 1633097000L; // corresponds to 2021-10-01T11:30:00Z
-    Instant result =
-        convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault());
+    Instant result = convertToTimestamp(value, "seconds", Optional.empty(), ZoneId.systemDefault());
     assertEquals(Instant.ofEpochSecond(1633097000L, 0), result);
   }
 
-
   static Instant convertToTimestamp(
-          Object value, String unixPrecision, Optional<MultiDateTimeFormatter> fromPattern, ZoneId zoneId) {
+      Object value,
+      String unixPrecision,
+      Optional<MultiDateTimeFormatter> fromPattern,
+      ZoneId zoneId) {
     return Utils.convertToTimestamp(value, unixPrecision, fromPattern, zoneId, Optional.empty());
   }
 }
