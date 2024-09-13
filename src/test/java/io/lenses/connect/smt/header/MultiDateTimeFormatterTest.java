@@ -74,4 +74,41 @@ class MultiDateTimeFormatterTest {
         String result = formatter.getDisplayPatterns();
         assertEquals(expected, result);
     }
+
+    @Test
+void testFormatWithEmptyListOfDateStrings() {
+    MultiDateTimeFormatter formatter = new MultiDateTimeFormatter(
+            List.of(),
+            List.of(),
+            false
+    );
+
+    assertThrows(DateTimeParseException.class, () -> formatter.format("2021-10-01T11:30:00", ZoneId.of("UTC")));
+}
+
+@Test
+void testFormatWithMultiplePatternsTargetingFirst() {
+    MultiDateTimeFormatter formatter = MultiDateTimeFormatter.createDateTimeFormatter(
+            List.of("yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss"),
+            "TestConfig",
+            ZoneId.of("UTC")
+    );
+
+    Instant expected = Instant.parse("2021-10-01T11:30:00Z");
+    Instant result = formatter.format("2021-10-01T11:30:00", ZoneId.of("UTC"));
+    assertEquals(expected, result);
+}
+
+@Test
+void testFormatWithMultiplePatternsTargetingSecond() {
+    MultiDateTimeFormatter formatter = MultiDateTimeFormatter.createDateTimeFormatter(
+            List.of("yyyy-MM-dd'T'HH:mm:ss", "yyyy-MM-dd HH:mm:ss"),
+            "TestConfig",
+            ZoneId.of("UTC")
+    );
+
+    Instant expected = Instant.parse("2021-10-01T11:30:00Z");
+    Instant result = formatter.format("2021-10-01 11:30:00", ZoneId.of("UTC"));
+    assertEquals(expected, result);
+}
 }

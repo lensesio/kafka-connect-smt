@@ -39,7 +39,6 @@ class MultiDateTimeFormatter {
                 return localDateTime.atZone(zoneId).toInstant();
             } catch (DateTimeParseException dtpe) {
                 // ignore exception and use fallback
-                System.err.println("ERROR: " + dtpe.getMessage());
             }
         }
         throw new DateTimeParseException("Cannot parse date with any formats", value, 0);
