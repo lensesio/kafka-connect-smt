@@ -10,6 +10,9 @@
  */
 package io.lenses.connect.smt.header;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
@@ -52,24 +55,20 @@ public class RenameHeader<R extends ConnectRecord<R>> implements Transformation<
   @Override
   public void close() {}
 
-  @Override
   public void configure(Map<String, ?> props) {
     SimpleConfig config = new SimpleConfig(CONFIG_DEF, props);
-    oldHeaderKey = config.getString(ConfigName.HEADER_OLD_KEY);
-    if (oldHeaderKey == null) {
-      throw new ConfigException("Configuration '" + ConfigName.HEADER_OLD_KEY + "' must be set.");
-    } else if (oldHeaderKey.isEmpty()) {
-      throw new ConfigException(
-          "Configuration '" + ConfigName.HEADER_OLD_KEY + "' must not be empty.");
-    }
+    oldHeaderKey = validateConfig(config, ConfigName.HEADER_OLD_KEY);
+    newHeaderKey = validateConfig(config, ConfigName.HEADER_NEW_KEY);
+  }
 
-    newHeaderKey = config.getString(ConfigName.HEADER_NEW_KEY);
-    if (newHeaderKey == null) {
-      throw new ConfigException("Configuration '" + ConfigName.HEADER_NEW_KEY + "' must be set.");
-    } else if (newHeaderKey.isEmpty()) {
-      throw new ConfigException(
-          "Configuration '" + ConfigName.HEADER_NEW_KEY + "' must not be empty.");
+  private String validateConfig(SimpleConfig config, String configName) {
+    String value = config.getString(configName);
+    if (value == null) {
+      throw new ConfigException("Configuration '" + configName + "' must be set.");
+    } else if (value.isEmpty()) {
+      throw new ConfigException("Configuration '" + configName + "' must not be empty.");
     }
+    return value;
   }
 
   @Override
@@ -77,13 +76,12 @@ public class RenameHeader<R extends ConnectRecord<R>> implements Transformation<
     if (r == null) {
       return null;
     }
-    final Header sourceHeader = r.headers().lastWithName(oldHeaderKey);
-    if (sourceHeader == null) {
-      return r;
-    }
+    final Iterator<Header> allHeaders = r.headers().allWithName(oldHeaderKey);
+    final List<Header> headers = new ArrayList<>();
+    allHeaders.forEachRemaining(headers::add);
 
     r.headers().remove(oldHeaderKey);
-    r.headers().add(newHeaderKey, sourceHeader.value(), sourceHeader.schema());
+    headers.forEach(header -> r.headers().add(newHeaderKey, header.value(), header.schema()));
     return r;
   }
 }
