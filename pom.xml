@@ -26,7 +26,7 @@
 
     <groupId>io.lenses</groupId>
     <artifactId>kafka-connect-smt</artifactId>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.5.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -34,7 +34,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
-        <kafka.version>3.7.0</kafka.version>
+        <kafka.version>4.1.0</kafka.version>
         <headerFile>${project.basedir}/checkstyle/java.header</headerFile>
     </properties>
 
