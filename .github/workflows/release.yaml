@@ -53,7 +53,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '11' # Or the desired Java version
+          java-version: '17' # Or the desired Java version
           distribution: 'temurin'
 
       - name: Extract tag name
