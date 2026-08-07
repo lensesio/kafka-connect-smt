@@ -1,0 +1,24 @@
+# Kafka Connect ServiceLoader manifest for the Lenses SMT collection.
+#
+# Kafka Connect's reflective plugin scanner does not discover SMTs whose class
+# hierarchy passes through a package-private abstract base (for example the
+# Insert*TimestampHeaders family, which extends InsertTimestampHeaders /
+# InsertRollingTimestampHeaders). Referencing those transforms then fails with
+# "Class ... could not be found", even though they are on the plugin path.
+#
+# Declaring every concrete Transformation here makes them discoverable via the
+# ServiceLoader, which works regardless of the superclass visibility and enables
+# plugin.discovery=service_load. See:
+# https://kafka.apache.org/documentation.html#connect_plugindiscovery
+io.lenses.connect.smt.header.InsertFieldTimestampHeaders
+io.lenses.connect.smt.header.InsertRecordTimestampHeaders
+io.lenses.connect.smt.header.InsertRollingFieldTimestampHeaders
+io.lenses.connect.smt.header.InsertRollingRecordTimestampHeaders
+io.lenses.connect.smt.header.InsertRollingWallclock
+io.lenses.connect.smt.header.InsertRollingWallclockHeaders
+io.lenses.connect.smt.header.InsertSourcePartitionOrOffsetValue
+io.lenses.connect.smt.header.InsertWallclock
+io.lenses.connect.smt.header.InsertWallclockDateTimePart
+io.lenses.connect.smt.header.InsertWallclockHeaders
+io.lenses.connect.smt.header.RenameHeader
+io.lenses.connect.smt.header.TimestampConverter
